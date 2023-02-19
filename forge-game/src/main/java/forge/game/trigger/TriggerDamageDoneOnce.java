@@ -1,9 +1,6 @@
 package forge.game.trigger;
 
 import java.util.Map;
-import java.util.Set;
-
-import com.google.common.collect.Sets;
 
 import forge.game.ability.AbilityKey;
 import forge.game.card.Card;
@@ -82,15 +79,15 @@ public class TriggerDamageDoneOnce extends Trigger {
     }
 
     public CardCollection getDamageSources(Map<Card, Integer> damageMap) {
-    if (!hasParam("ValidSource")) {
-        return new CardCollection(damageMap.keySet());
-    }
-    CardCollection result = new CardCollection();
-    for (Card c : damageMap.keySet()) {
-        if (matchesValid(c, getParam("ValidSource").split(","))) {
-            result.add(c);
+        if (!hasParam("ValidSource")) {
+            return new CardCollection(damageMap.keySet());
         }
+        CardCollection result = new CardCollection();
+        for (Card c : damageMap.keySet()) {
+            if (matchesValid(c, getParam("ValidSource").split(","))) {
+                result.add(c);
+            }
+        }
+        return result;
     }
-    return result;
-}
 }
