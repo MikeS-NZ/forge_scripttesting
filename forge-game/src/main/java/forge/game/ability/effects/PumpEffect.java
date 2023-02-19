@@ -126,7 +126,7 @@ public class PumpEffect extends SpellAbilityEffect {
             final List<String> keywords, final long timestamp) {
         final Card host = sa.getHostCard();
         final String duration = sa.getParam("Duration");
-        
+
         //if host is not on the battlefield don't apply
         // Suspend should does Affect the Stack
         if (((duration != null && duration.startsWith("UntilHostLeavesPlay")) || "UntilLoseControlOfHost".equals(duration))
@@ -199,7 +199,7 @@ public class PumpEffect extends SpellAbilityEffect {
                 sb.append(" ");
             }
 
-            if (sa instanceof AbilitySub & sa.getRootAbility().getTargets().containsAll(tgts)) {
+            if (sa instanceof AbilitySub && sa.getRootAbility().getTargets().containsAll(tgts)) {
                 //try to avoid having the same long list of targets twice in a StackDescription
                 sb.append(tgts.size() == 1 && tgts.get(0) instanceof Card ? "It " : "They ");
             } else {
@@ -262,21 +262,28 @@ public class PumpEffect extends SpellAbilityEffect {
             } else {
                 sb.append(".");
             }
-
         }
 
         return sb.toString();
-    } // pumpStackDescription()
+    }
 
     @Override
     public void resolve(final SpellAbility sa) {
-        final Game game = sa.getActivatingPlayer().getGame();
+        final Player activator = sa.getActivatingPlayer();
+        final Game game = activator.getGame();
         final Card host = sa.getHostCard();
         final long timestamp = game.getNextTimestamp();
+        List<Card> tgtCards = getCardsfromTargets(sa);
+        List<Player> tgtPlayers = getTargetPlayers(sa);
 
         List<String> keywords = Lists.newArrayList();
         if (sa.hasParam("KW")) {
             keywords.addAll(Arrays.asList(sa.getParam("KW").split(" & ")));
+        } else if (sa.hasParam("KWChoice")) {
+            List<String> options = Arrays.asList(sa.getParam("KWChoice").split(","));
+            String chosen = activator.getController().chooseKeywordForPump(options, sa,
+                    Localizer.getInstance().getMessage("lblChooseKeyword"), tgtCards.get(0));
+            keywords.add(chosen);
         }
         final int a = AbilityUtils.calculateAmount(host, sa.getParam("NumAtt"), sa, !sa.hasParam("Double"));
         final int d = AbilityUtils.calculateAmount(host, sa.getParam("NumDef"), sa, !sa.hasParam("Double"));
@@ -284,14 +291,9 @@ public class PumpEffect extends SpellAbilityEffect {
         if (sa.hasParam("SharedKeywordsZone")) {
             List<ZoneType> zones = ZoneType.listValueOf(sa.getParam("SharedKeywordsZone"));
             String[] restrictions = sa.hasParam("SharedRestrictions") ? sa.getParam("SharedRestrictions").split(",") : new String[]{"Card"};
-            keywords = CardFactoryUtil.sharedKeywords(keywords, restrictions, zones, sa.getHostCard(), sa);
+            keywords = CardFactoryUtil.sharedKeywords(keywords, restrictions, zones, host, sa);
         }
 
-        List<GameEntity> tgts = Lists.newArrayList();
-        List<Card> tgtCards = getCardsfromTargets(sa);
-        List<Player> tgtPlayers = getTargetPlayers(sa);
-        tgts.addAll(tgtCards);
-        tgts.addAll(tgtPlayers);
         final CardCollection untargetedCards = CardUtil.getRadiance(sa);
 
         if (sa.hasParam("DefinedKW")) {
@@ -301,7 +303,7 @@ public class PumpEffect extends SpellAbilityEffect {
             if (defined.equals("ChosenType")) {
                 replaced = host.getChosenType();
             } else if (defined.equals("ActivatorName")) {
-                replaced = sa.getActivatingPlayer().getName();
+                replaced = activator.getName();
             } else if (defined.equals("ChosenPlayer")) {
                 replaced = host.getChosenPlayer().getName();
             } else if (defined.endsWith("Player")) {
@@ -369,7 +371,7 @@ public class PumpEffect extends SpellAbilityEffect {
                     ? TextUtil.fastReplace(sa.getParam("OptionQuestion"), "TARGETS", targets)
                     : Localizer.getInstance().getMessage("lblApplyPumpToTarget", targets);
 
-            if (!sa.getActivatingPlayer().getController().confirmAction(sa, null, message, null)) {
+            if (!activator.getController().confirmAction(sa, null, message, null)) {
                 return;
             }
         }
@@ -392,7 +394,7 @@ public class PumpEffect extends SpellAbilityEffect {
         }
 
         if (sa.hasParam("NoteNumber")) {
-            int num = AbilityUtils.calculateAmount(sa.getHostCard(), sa.getParam("NoteNumber"), sa);
+            int num = AbilityUtils.calculateAmount(host, sa.getParam("NoteNumber"), sa);
             for (Player p : tgtPlayers) {
                 p.noteNumberForName(host.getName(), num);
             }
@@ -417,13 +419,13 @@ public class PumpEffect extends SpellAbilityEffect {
         for (int j = 0; j < size; j++) {
             final Card tgtC = tgtCards.get(j);
 
-            // only pump things in PumpZone
-            if (!tgtC.isInZone(pumpZone)) {
+            // CR 702.26e
+            if (tgtC.isPhasedOut()) {
                 continue;
             }
 
-            // if pump is a target, make sure we can still target now
-            if (sa.usesTargeting() && !tgtC.canBeTargetedBy(sa)) {
+            // only pump things in PumpZone
+            if (!tgtC.isInZone(pumpZone)) {
                 continue;
             }
 
@@ -475,7 +477,7 @@ public class PumpEffect extends SpellAbilityEffect {
         }
 
         for (Player p : tgtPlayers) {
-            if (!p.canBeTargetedBy(sa)) {
+            if (!p.isInGame()) {
                 continue;
             }
 
@@ -483,5 +485,5 @@ public class PumpEffect extends SpellAbilityEffect {
         }
 
         replaceDying(sa);
-    } // pumpResolve()
+    }
 }

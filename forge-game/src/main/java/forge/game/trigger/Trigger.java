@@ -341,14 +341,14 @@ public abstract class Trigger extends TriggerReplacementBase {
         }
 
         // host controller will be null when adding card in a simulation game
-        if (this.getHostCard().getController() == null || game.getAge() != GameStage.Play || !meetsCommonRequirements(this.mapParams)) {
+        if (this.getHostCard().getController() == null || (game.getAge() != GameStage.Play && game.getAge() != GameStage.RestartedByKarn) || !meetsCommonRequirements(this.mapParams)) {
             return false;
         }
 
         return true;
     }
 
-    public boolean meetsRequirementsOnTriggeredObjects(Game game,  final Map<AbilityKey, Object> runParams) {
+    public boolean meetsRequirementsOnTriggeredObjects(Game game, final Map<AbilityKey, Object> runParams) {
         if ("True".equals(getParam("EvolveCondition"))) {
             final Card moved = (Card) runParams.get(AbilityKey.Card);
             if (moved == null) {
@@ -373,6 +373,11 @@ public abstract class Trigger extends TriggerReplacementBase {
             final Card moved = (Card) runParams.get(AbilityKey.Card);
             if (null != moved && !moved.isOptionalCostPaid(OptionalCost.AltCost))
                 return false;
+        } else if ("LifePaid".equals(condition)) {
+            final SpellAbility trigSA = (SpellAbility) runParams.get(AbilityKey.CastSA);
+            if (trigSA != null && trigSA.getAmountLifePaid() <= 0) {
+                return false;
+            }
         } else if ("NoOpponentHasMoreLifeThanAttacked".equals(condition)) {
             GameEntity attacked = (GameEntity) runParams.get(AbilityKey.Attacked);
             if (attacked == null) {
@@ -395,6 +400,12 @@ public abstract class Trigger extends TriggerReplacementBase {
                 }
             }
             if (found) {
+                return false;
+            }
+        } else if ("Sacrificed".equals(condition)) {
+            final SpellAbility trigSA = (SpellAbility) runParams.get(AbilityKey.CastSA);
+            if (trigSA != null &&
+                    (trigSA.getPaidList("Sacrificed") == null || trigSA.getPaidList("Sacrificed").isEmpty())) {
                 return false;
             }
         } else if ("AttackedPlayerWithMostLife".equals(condition)) {

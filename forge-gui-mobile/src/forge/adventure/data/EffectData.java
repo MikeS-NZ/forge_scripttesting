@@ -19,6 +19,7 @@ public class EffectData implements Serializable {
     public float moveSpeed = 1.0f;       //Change of movement speed. Map only.
     public float goldModifier = -1.0f;   //Modifier for shop discounts.
     public int cardRewardBonus = 0;    //Bonus "DeckCard" drops. Max 3.
+    public int extraManaShards = 0; //Mana Shard tokens available to spend in battle
 
     //Opponent field.
     public EffectData opponent;          //Effects to be applied to the opponent's side.
@@ -31,6 +32,7 @@ public class EffectData implements Serializable {
         startBattleWithCard=effect.startBattleWithCard;
         colorView=effect.colorView;
         opponent = (effect.opponent == null) ? null : new EffectData(effect.opponent);
+        extraManaShards = effect.extraManaShards;
     }
 
     public Array<IPaperCard> startBattleWithCards() {
@@ -65,7 +67,7 @@ public class EffectData implements Serializable {
         if(name != null && !name.isEmpty()) description += name + "\n";
         if(colorView) description += "Manasight.\n";
         if(lifeModifier != 0)
-            description += "Life: " + ((lifeModifier > 0) ? "+" : "") + lifeModifier + "\n";
+            description += "[+Life] " + ((lifeModifier > 0) ? "+" : "") + lifeModifier + "\n";
         if(startBattleWithCard != null && startBattleWithCard.length != 0)
             description+="Cards on battlefield: \n" + cardNames() + "\n";
         if(changeStartCards != 0)

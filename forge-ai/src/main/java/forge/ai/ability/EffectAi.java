@@ -22,6 +22,7 @@ import forge.game.card.CardCollection;
 import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
+import forge.game.card.CardUtil;
 import forge.game.combat.Combat;
 import forge.game.combat.CombatUtil;
 import forge.game.phase.PhaseHandler;
@@ -69,10 +70,10 @@ public class EffectAi extends SpellAbilityAi {
                     randomReturn = true;
                 }
             } else if (logic.equals("Fog")) {
-                if (game.getPhaseHandler().isPlayerTurn(sa.getActivatingPlayer())) {
+                if (phase.isPlayerTurn(sa.getActivatingPlayer())) {
                     return false;
                 }
-                if (!game.getPhaseHandler().is(PhaseType.COMBAT_DECLARE_BLOCKERS)) {
+                if (!phase.is(PhaseType.COMBAT_DECLARE_BLOCKERS)) {
                     return false;
                 }
                 if (!game.getStack().isEmpty()) {
@@ -114,8 +115,7 @@ public class EffectAi extends SpellAbilityAi {
                 }
                 randomReturn = true;
             } else if (logic.equals("ChainVeil")) {
-                if (!phase.isPlayerTurn(ai) || !phase.getPhase().equals(PhaseType.MAIN2)
-                        || CardLists.getType(ai.getCardsIn(ZoneType.Battlefield), "Planeswalker").isEmpty()) {
+                if (!phase.isPlayerTurn(ai) || !phase.getPhase().equals(PhaseType.MAIN2) || ai.getPlaneswalkersInPlay().isEmpty()) {
                     return false;
                 }
                 randomReturn = true;
@@ -215,6 +215,17 @@ public class EffectAi extends SpellAbilityAi {
                 return topStack.getActivatingPlayer().isOpponentOf(ai) && topStack.getApi() == ApiType.GainLife;
             } else if (logic.equals("Fight")) {
                 return FightAi.canFightAi(ai, sa, 0, 0);
+            } else if (logic.equals("Pump")) {
+                List<Card> options = CardUtil.getValidCardsToTarget(sa.getTargetRestrictions(), sa);
+                options = CardLists.filterControlledBy(options, ai);
+                if (sa.getPayCosts().hasTapCost()) {
+                    options.remove(sa.getHostCard());
+                }
+                if (!options.isEmpty() && phase.isPlayerTurn(ai) && phase.getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)) {
+                    sa.getTargets().add(ComputerUtilCard.getBestCreatureAI(options));
+                    return true;
+                }
+                return false;
             } else if (logic.equals("Burn")) {
                 // for DamageDeal sub-abilities (eg. Wild Slash, Skullcrack)
                 SpellAbility burn = sa.getSubAbility();
@@ -232,8 +243,7 @@ public class EffectAi extends SpellAbilityAi {
                 }
                 return true;
             } else if (logic.equals("ReplaySpell")) {
-                CardCollection list = new CardCollection(game.getCardsIn(ZoneType.Graveyard));
-                list = CardLists.getValidCards(list, sa.getTargetRestrictions().getValidTgts(), ai, sa.getHostCard(), sa);
+                CardCollection list = CardLists.getValidCards(game.getCardsIn(ZoneType.Graveyard), sa.getTargetRestrictions().getValidTgts(), ai, sa.getHostCard(), sa);
                 if (!ComputerUtil.targetPlayableSpellCard(ai, list, sa, false, false)) {
                     return false;
                 }
@@ -241,7 +251,7 @@ public class EffectAi extends SpellAbilityAi {
                 Card host = sa.getHostCard();
                 Combat combat = game.getCombat();
                 if (combat != null && combat.isAttacking(host, ai) && !combat.isBlocked(host)
-                        && game.getPhaseHandler().is(PhaseType.COMBAT_DECLARE_BLOCKERS)
+                        && phase.is(PhaseType.COMBAT_DECLARE_BLOCKERS)
                         && !AiCardMemory.isRememberedCard(ai, host, AiCardMemory.MemorySet.ACTIVATED_THIS_TURN)) {
                     AiCardMemory.rememberCard(ai, host, AiCardMemory.MemorySet.ACTIVATED_THIS_TURN); // ideally needs once per combat or something
                     return true;

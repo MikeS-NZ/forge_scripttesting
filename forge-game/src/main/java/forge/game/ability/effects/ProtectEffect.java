@@ -90,7 +90,7 @@ public class ProtectEffect extends SpellAbilityEffect {
         }
 
         return sb.toString();
-    } // protectStackDescription()
+    }
 
     @Override
     public void resolve(SpellAbility sa) {
@@ -101,7 +101,7 @@ public class ProtectEffect extends SpellAbilityEffect {
         final List<String> choices = getProtectionList(sa);
         final List<String> gains = new ArrayList<>();
         final List<Card> tgtCards = getTargetCards(sa);
-        
+
         if (isChoice && !choices.isEmpty())  {
             Player choser = sa.getActivatingPlayer();
             if (sa.hasParam("Choser") && sa.getParam("Choser").equals("Controller") && !tgtCards.isEmpty()) {
@@ -136,9 +136,7 @@ public class ProtectEffect extends SpellAbilityEffect {
             if (!tgtC.isInPlay()) {
                 continue;
             }
-
-            // if this is a target, make sure we can still target now
-            if (sa.usesTargeting() && !tgtC.canBeTargetedBy(sa)) {
+            if (tgtC.isPhasedOut()) {
                 continue;
             }
 
@@ -183,8 +181,8 @@ public class ProtectEffect extends SpellAbilityEffect {
                 addUntilCommand(sa, untilEOT);
             }
         }
-    } // protectResolve()
-    
+    }
+
     public static List<String> getProtectionList(final SpellAbility sa) {
         final List<String> gains = new ArrayList<>();
 

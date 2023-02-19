@@ -6,11 +6,13 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
 import forge.card.CardStateName;
 import forge.card.mana.ManaAtom;
 import forge.card.mana.ManaCost;
+import forge.card.mana.ManaCostParser;
 import forge.card.mana.ManaCostShard;
 import forge.game.Game;
 import forge.game.GameObject;
@@ -79,8 +81,14 @@ public class CostAdjustment {
             }
         }
         if (sa.hasParam("RaiseCost")) {
-            int n = AbilityUtils.calculateAmount(host, sa.getParam("RaiseCost"), sa);
-            result.add(new Cost(ManaCost.get(n), false));
+            String raise = sa.getParam("RaiseCost");
+            ManaCost mc;
+            if (sa.hasSVar(raise)) {
+                mc = ManaCost.get(AbilityUtils.calculateAmount(host, raise, sa));
+            } else {
+                mc = new ManaCost(new ManaCostParser(raise));
+            }
+            result.add(new Cost(mc, false));
         }
 
         // Raise cost
@@ -104,17 +112,14 @@ public class CostAdjustment {
         }
 
         final String scost = st.getParamOrDefault("Cost", "1");
-        Cost part = new Cost(scost, sa.isAbility());
         int count = 0;
 
         if (st.hasParam("ForEachShard")) {
-            CostPartMana mc = cost.getCostMana();
-            if (mc != null) {
-                byte atom = ManaAtom.fromName(st.getParam("ForEachShard").toLowerCase());
-                for (ManaCostShard shard : mc.getManaCostFor(sa)) {
-                    if ((shard.getColorMask() & atom) != 0) {
-                        ++count;
-                    }
+            ManaCost mc = sa.getHostCard().getManaCost();
+            byte atom = ManaAtom.fromName(st.getParam("ForEachShard").toLowerCase());
+            for (ManaCostShard shard : mc) {
+                if ((shard.getColorMask() & atom) != 0) {
+                    ++count;
                 }
             }
         } else if (st.hasParam("Amount")) {
@@ -149,8 +154,9 @@ public class CostAdjustment {
             // Amount 1 as default
             count = 1;
         }
-        for (int i = 0; i < count; ++i) {
-            cost.add(part);
+        if (count > 0) {
+            Cost part = new Cost(scost, sa.isAbility());
+            cost.mergeTo(part, count);
         }
     }
 
@@ -171,7 +177,7 @@ public class CostAdjustment {
                 originalCard.turnFaceDownNoUpdate();
                 isStateChangeToFaceDown = true;
             }
-        } // isSpell
+        }
 
         CardCollection cardsOnBattlefield = new CardCollection(game.getCardsIn(ZoneType.Battlefield));
         cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Stack));
@@ -205,6 +211,12 @@ public class CostAdjustment {
         }
         // need to reduce generic extra because of 2 hybrid mana
         cost.decreaseGenericMana(sumGeneric);
+
+        if (sa.isSpell() && !sa.getPipsToReduce().isEmpty()) {
+            for (String pip : sa.getPipsToReduce()) {
+                cost.decreaseShard(ManaCostShard.parseNonGeneric(pip), 1);
+            }
+        }
 
         if (sa.isSpell() && sa.isOffering()) { // cost reduction from offerings
             adjustCostByOffering(cost, sa);
@@ -387,7 +399,7 @@ public class CostAdjustment {
             value = AbilityUtils.calculateAmount(hostCard, amount, staticAbility);
         }
 
-        if (!staticAbility.hasParam("Cost") && ! staticAbility.hasParam("Color")) {
+        if (!staticAbility.hasParam("Cost") && !staticAbility.hasParam("Color")) {
             int minMana = 0;
             if (staticAbility.hasParam("MinMana")) {
                 minMana = Integer.valueOf(staticAbility.getParam("MinMana"));
@@ -398,14 +410,18 @@ public class CostAdjustment {
                 return Math.min(value, maxReduction);
             }
         } else {
-            final String color = staticAbility.getParamOrDefault("Cost",  staticAbility.getParam("Color"));
+            final String color = staticAbility.getParamOrDefault("Cost", staticAbility.getParam("Color"));
             int sumGeneric = 0;
             // might be problematic for wierd hybrid combinations
             for (final String cost : color.split(" ")) {
                 if (StringUtils.isNumeric(cost)) {
                     sumGeneric += Integer.parseInt(cost) * value;
                 } else {
-                    manaCost.decreaseShard(ManaCostShard.parseNonGeneric(cost), value);
+                    if (staticAbility.hasParam("IgnoreGeneric")) {
+                        manaCost.decreaseShard(ManaCostShard.parseNonGeneric(cost), value);
+                    } else {
+                        manaCost.subtractManaCost(new ManaCost(new ManaCostParser(Strings.repeat(cost + " ", value))));
+                    }
                 }
             }
             return sumGeneric;
@@ -431,10 +447,6 @@ public class CostAdjustment {
             return false;
         }
         if (!st.matchesValidParam("Activator", activator)) {
-            return false;
-        }
-        if (st.hasParam("NonActivatorTurn") && (activator == null
-                || game.getPhaseHandler().isPlayerTurn(activator))) {
             return false;
         }
 

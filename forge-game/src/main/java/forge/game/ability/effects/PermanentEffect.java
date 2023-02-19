@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import forge.game.Game;
 import forge.game.ability.AbilityKey;
@@ -19,7 +18,7 @@ public class PermanentEffect extends SpellAbilityEffect {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * forge.card.abilityfactory.SpellEffect#resolve(forge.card.spellability.
      * SpellAbility)
@@ -34,7 +33,7 @@ public class PermanentEffect extends SpellAbilityEffect {
         CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
         CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
 
-        Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
+        Map<AbilityKey, Object> moveParams = AbilityKey.newMap();
         moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
         moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
 

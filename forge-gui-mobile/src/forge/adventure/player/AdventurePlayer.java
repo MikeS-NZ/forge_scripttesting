@@ -50,6 +50,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     private int gold   =  0;
     private int maxLife= 20;
     private int life   = 20;
+    private int shards = 0;
     private EffectData blessing; //Blessing to apply for next battle.
     private final PlayerStatistic statistic    = new PlayerStatistic();
     private final Map<String, Byte> questFlags = new HashMap<>();
@@ -64,11 +65,12 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     private boolean announceCustom = false;
 
     // Signals
-    SignalList onLifeTotalChangeList = new SignalList();
-    SignalList onGoldChangeList      = new SignalList();
-    SignalList onPlayerChangeList    = new SignalList();
-    SignalList onEquipmentChange     = new SignalList();
-    SignalList onBlessing            = new SignalList();
+    final SignalList onLifeTotalChangeList = new SignalList();
+    final SignalList onShardsChangeList    = new SignalList();
+    final SignalList onGoldChangeList      = new SignalList();
+    final SignalList onPlayerChangeList    = new SignalList();
+    final SignalList onEquipmentChange     = new SignalList();
+    final SignalList onBlessing            = new SignalList();
 
     public AdventurePlayer() { clear(); }
 
@@ -90,6 +92,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         gold              = 0;
         maxLife           = 20;
         life              = 20;
+        shards            = 0;
         clearDecks();
         inventoryItems.clear();
         equippedItems.clear();
@@ -124,6 +127,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         this.difficultyData.spawnRank          = difficultyData.spawnRank;
         this.difficultyData.enemyLifeFactor    = difficultyData.enemyLifeFactor;
         this.difficultyData.sellFactor         = difficultyData.sellFactor;
+        this.difficultyData.shardSellRatio     = difficultyData.shardSellRatio;
 
         gold        = difficultyData.staringMoney;
         name        = n;
@@ -134,10 +138,12 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         setColorIdentity(DeckProxy.getColorIdentity(deck));
 
         life = maxLife = difficultyData.startingLife;
+        shards = difficultyData.startingShards;
 
         inventoryItems.addAll(difficultyData.startItems);
         onGoldChangeList.emit();
         onLifeTotalChangeList.emit();
+        onShardsChangeList.emit();
     }
 
     public void setSelectedDeckSlot(int slot) {
@@ -149,6 +155,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     }
     public void updateDifficulty(DifficultyData diff) {
         maxLife = diff.startingLife;
+        this.difficultyData.startingShards = diff.startingShards;
         this.difficultyData.startingLife = diff.startingLife;
         this.difficultyData.staringMoney = diff.staringMoney;
         this.difficultyData.startingDifficulty = diff.startingDifficulty;
@@ -156,6 +163,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         this.difficultyData.spawnRank = diff.spawnRank;
         this.difficultyData.enemyLifeFactor = diff.enemyLifeFactor;
         this.difficultyData.sellFactor = diff.sellFactor;
+        this.difficultyData.shardSellRatio = diff.shardSellRatio;
         fullHeal();
     }
 
@@ -171,6 +179,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     public int getGold()                  { return gold;              }
     public int getLife()                  { return life;              }
     public int getMaxLife()               { return maxLife;           }
+    public int getShards()               { return shards;           }
     public @Null EffectData getBlessing() { return blessing;          }
 
     public Collection<String> getEquippedItems() { return equippedItems.values(); }
@@ -217,6 +226,10 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         if(this.difficultyData.sellFactor==0)
             this.difficultyData.sellFactor=0.2f;
 
+        this.difficultyData.shardSellRatio=data.readFloat("sellFactor");
+        if(this.difficultyData.shardSellRatio==0)
+            this.difficultyData.shardSellRatio=0.8f;
+
         name        = data.readString("name");
         heroRace    = data.readInt("heroRace");
         avatarIndex = data.readInt("avatarIndex");
@@ -229,6 +242,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         gold        = data.readInt("gold");
         maxLife     = data.readInt("maxLife");
         life        = data.readInt("life");
+        shards      = data.containsKey("shards")?data.readInt("shards"):0;
         worldPosX   = data.readFloat("worldPosX");
         worldPosY   = data.readFloat("worldPosY");
 
@@ -297,6 +311,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         announceCustom  = data.containsKey("announceCustom")  ? data.readBool("announceCustom")  : false;
 
         onLifeTotalChangeList.emit();
+        onShardsChangeList.emit();
         onGoldChangeList.emit();
         onBlessing.emit();
     }
@@ -312,6 +327,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         data.store("difficultyName",this.difficultyData.name);
         data.store("enemyLifeFactor",this.difficultyData.enemyLifeFactor);
         data.store("sellFactor",this.difficultyData.sellFactor);
+        data.store("shardSellRatio", this.difficultyData.shardSellRatio);
 
         data.store("name",name);
         data.store("heroRace",heroRace);
@@ -329,6 +345,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         data.store("gold",gold);
         data.store("life",life);
         data.store("maxLife",maxLife);
+        data.store("shards",shards);
         data.store("deckName",deck.getName());
 
         data.storeObject("inventory",inventoryItems.toArray(String.class));
@@ -396,10 +413,14 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
                 addGold(reward.getCount());
                 break;
             case Item:
-                inventoryItems.add(reward.getItem().name);
+                if(reward.getItem()!=null)
+                    inventoryItems.add(reward.getItem().name);
                 break;
             case Life:
                 addMaxLife(reward.getCount());
+                break;
+            case Shards:
+                addShards(reward.getCount());
                 break;
         }
     }
@@ -407,6 +428,10 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     private void addGold(int goldCount) {
         gold+=goldCount;
         onGoldChangeList.emit();
+    }
+    public void onShardsChange(Runnable  o) {
+        onShardsChangeList.add(o);
+        o.run();
     }
 
     public void onLifeChange(Runnable  o) {
@@ -435,31 +460,37 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
 
     public boolean fullHeal() {
         if (life < maxLife) {
-            life = Math.max(maxLife, life);
+            life = maxLife;
             onLifeTotalChangeList.emit();
             return true;
         }
         return false;
     }
 
-    public void potionOfFalseLife() {
+    public boolean potionOfFalseLife() {
         if (gold >= falseLifeCost() && life == maxLife) {
             life = maxLife + 2;
             gold -= falseLifeCost();
             onLifeTotalChangeList.emit();
             onGoldChangeList.emit();
+            return true;
         } else {
             System.out.println("Can't afford cost of false life " + falseLifeCost());
             System.out.println("Only has this much gold " + gold);
         }
+        return false;
     }
 
     public int falseLifeCost() {
-        return 200 + (int)(50 * getStatistic().winLossRatio());
+        int ret = 200 + (int)(50 * getStatistic().winLossRatio());
+        return ret < 0?250:ret;
     }
-
     public void heal(int amount) {
         life = Math.min(life + amount, maxLife);
+        onLifeTotalChangeList.emit();
+    }
+    public void heal(float percent) {
+        life =  Math.min(life + (int)(maxLife*percent), maxLife);
         onLifeTotalChangeList.emit();
     }
     public void defeated() {
@@ -467,6 +498,9 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         life=Math.max(1,(int)(life-(maxLife*difficultyData.lifeLoss)));
         onLifeTotalChangeList.emit();
         onGoldChangeList.emit();
+    }
+    public void win() {
+        Current.player().addShards(1);
     }
     public void addMaxLife(int count) {
         maxLife += count;
@@ -479,6 +513,18 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     public void takeGold(int price) {
         gold -= price;
         onGoldChangeList.emit();
+    }
+    public void addShards(int number) {
+        takeShards(-number);
+    }
+    public void takeShards(int number) {
+        shards -= number;
+        onShardsChangeList.emit();
+    }
+
+    public void setShards(int number) {
+        shards = number;
+        onShardsChangeList.emit();
     }
 
     public void addBlessing(EffectData bless){
@@ -539,7 +585,7 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
         if(blessing != null) {
             if(blessing.cardRewardBonus > 0) result += blessing.cardRewardBonus;
         }
-        return Math.max(result, 3);
+        return Math.min(result, 3);
     }
 
     public DifficultyData getDifficulty() {
@@ -646,4 +692,24 @@ public class AdventurePlayer implements Serializable, SaveFileContent {
     public void resetQuestFlags(){
         questFlags.clear();
     }
+
+    public int getEnemyDeckNumber(String enemyName, int maxDecks){
+    int deckNumber = 0;
+    if (statistic.getWinLossRecord().get(enemyName)!=null)
+    {
+        int playerWins = statistic.getWinLossRecord().get(enemyName).getKey();
+        int enemyWins = statistic.getWinLossRecord().get(enemyName).getValue();
+        if (playerWins > enemyWins){
+            int deckNumberAfterAlgorithmOutput = (int)((playerWins-enemyWins) * (difficultyData.enemyLifeFactor / 3));
+            if (deckNumberAfterAlgorithmOutput < maxDecks){
+                deckNumber = deckNumberAfterAlgorithmOutput;
+            }
+            else {
+                deckNumber = maxDecks-1;
+            }
+        }
+    }
+    return deckNumber;
+    }
+
 }

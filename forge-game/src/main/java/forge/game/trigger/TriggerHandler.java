@@ -28,7 +28,6 @@ import com.google.common.collect.Multimaps;
 import forge.game.CardTraitBase;
 import forge.game.CardTraitPredicates;
 import forge.game.Game;
-import forge.game.GlobalRuleChange;
 import forge.game.IHasSVars;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityKey;
@@ -37,6 +36,7 @@ import forge.game.card.*;
 import forge.game.player.Player;
 import forge.game.spellability.AbilitySub;
 import forge.game.spellability.SpellAbility;
+import forge.game.staticability.StaticAbilityDisableTriggers;
 import forge.game.staticability.StaticAbilityPanharmonicon;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
@@ -367,8 +367,8 @@ public class TriggerHandler {
         for (final Trigger deltrig : delayedTriggersWorkingCopy) {
             if (deltrig.getHostCard().getController().equals(player)) {
                 if (isTriggerActive(deltrig) && canRunTrigger(deltrig, mode, runParams)) {
-                    runSingleTrigger(deltrig, runParams);
                     delayedTriggers.remove(deltrig);
+                    runSingleTrigger(deltrig, runParams);
                 }
             }
         }
@@ -394,7 +394,8 @@ public class TriggerHandler {
             return false; // Trigger removed by effect
         }
 
-        if (!regtrig.zonesCheck(game.getZoneOf(regtrig.getHostCard()))) {
+        // do not check delayed
+        if (regtrig.getSpawningAbility() == null && !regtrig.zonesCheck(game.getZoneOf(regtrig.getHostCard()))) {
             return false; // Host card isn't where it needs to be.
         }
 
@@ -443,32 +444,9 @@ public class TriggerHandler {
             }
         }
 
-        // Torpor Orb check
-        if (game.getStaticEffects().getGlobalRuleChange(GlobalRuleChange.noCreatureETBTriggers)
-                && !regtrig.isStatic() && mode.equals(TriggerType.ChangesZone)) {
-            if (runParams.get(AbilityKey.Destination) instanceof String) {
-                final String dest = (String) runParams.get(AbilityKey.Destination);
-                if (dest.equals("Battlefield") && runParams.get(AbilityKey.Card) instanceof Card) {
-                    final Card card = (Card) runParams.get(AbilityKey.Card);
-                    if (card.isCreature()) {
-                        return false;
-                    }
-                }
-            }
-        } // Torpor Orb check
-
-        if (game.getStaticEffects().getGlobalRuleChange(GlobalRuleChange.noCreatureDyingTriggers)
-                && !regtrig.isStatic() && mode.equals(TriggerType.ChangesZone)) {
-            if (runParams.get(AbilityKey.Destination) instanceof String && runParams.get(AbilityKey.Origin) instanceof String) {
-                final String dest = (String) runParams.get(AbilityKey.Destination);
-                final String origin = (String) runParams.get(AbilityKey.Origin);
-                if (dest.equals("Graveyard") && origin.equals("Battlefield") && runParams.get(AbilityKey.Card) instanceof Card) {
-                    final Card card = (Card) runParams.get(AbilityKey.Card);
-                    if (card.isCreature()) {
-                        return false;
-                    }
-                }
-            }
+        // check if any static abilities are disabling the trigger (Torpor Orb and the like)
+        if (!regtrig.isStatic() && StaticAbilityDisableTriggers.disabled(game, regtrig, runParams)) {
+            return false;
         }
         return true;
     }
@@ -503,16 +481,22 @@ public class TriggerHandler {
     // Return true if the trigger went off, false otherwise.
     private void runSingleTriggerInternal(final Trigger regtrig, final Map<AbilityKey, Object> runParams) {
         // All tests passed, execute ability.
-        if (regtrig instanceof TriggerTapsForMana) {
+        if (regtrig instanceof TriggerTapsForMana || regtrig instanceof TriggerManaAdded) {
             final SpellAbility abMana = (SpellAbility) runParams.get(AbilityKey.AbilityMana);
             if (null != abMana && null != abMana.getManaPart()) {
                 abMana.setUndoable(false);
             }
         }
-        if (regtrig instanceof TriggerSpellAbilityCastOrCopy) {
+        else if (regtrig instanceof TriggerSpellAbilityCastOrCopy) {
             final SpellAbility abMana = (SpellAbility) runParams.get(AbilityKey.CastSA);
             if (null != abMana && null != abMana.getManaPart()) {
                 abMana.setUndoable(false);
+            }
+        }
+        else if (regtrig instanceof TriggerTaps || regtrig instanceof TriggerUntaps) {
+            final Card c = (Card) runParams.get(AbilityKey.Card);
+            for (SpellAbility sa : game.getStack().filterUndoStackByHost(c)) {
+                sa.setUndoable(false);
             }
         }
 
@@ -552,11 +536,10 @@ public class TriggerHandler {
         sa.setTrigger(regtrig);
         sa.setSourceTrigger(regtrig.getId());
         regtrig.setTriggeringObjects(sa, runParams);
-        TriggerAbilityTriggered.addTriggeringObject(regtrig, sa, runParams);
         sa.setTriggerRemembered(regtrig.getTriggerRemembered());
 
         if (regtrig.hasParam("TriggerController")) {
-            Player p = AbilityUtils.getDefinedPlayers(regtrig.getHostCard(), regtrig.getParam("TriggerController"), sa).get(0);
+            Player p = AbilityUtils.getDefinedPlayers(host, regtrig.getParam("TriggerController"), sa).get(0);
             sa.setActivatingPlayer(p);
         }
 
@@ -589,6 +572,7 @@ public class TriggerHandler {
             wrapperAbility.getActivatingPlayer().getController().playTrigger(host, wrapperAbility, isMandatory);
         } else {
             game.getStack().addSimultaneousStackEntry(wrapperAbility);
+            game.getTriggerHandler().runTrigger(TriggerType.AbilityTriggered, TriggerAbilityTriggered.getRunParams(regtrig, wrapperAbility, runParams), false);
         }
 
         regtrig.triggerRun();

@@ -14,6 +14,7 @@ import forge.model.FModel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -30,6 +31,7 @@ public class RewardData {
     public int addMaxCount;
     public String cardName;
     public String itemName;
+    public String[] itemNames;
     public String[] editions;
     public String[] colors;
     public String[] rarity;
@@ -41,6 +43,10 @@ public class RewardData {
     public String colorType;
     public String cardText;
     public boolean matchAllSubTypes;
+    public boolean matchAllColors;
+    public RewardData[] cardUnion;
+    public String[] deckNeeds;
+    public RewardData[] rotation;
 
     public RewardData() { }
 
@@ -51,6 +57,7 @@ public class RewardData {
         addMaxCount =rewardData.addMaxCount;
         cardName    =rewardData.cardName;
         itemName    =rewardData.itemName;
+        itemNames    =rewardData.itemNames==null?null:rewardData.itemNames.clone();
         editions    =rewardData.editions==null?null:rewardData.editions.clone();
         colors      =rewardData.colors==null?null:rewardData.colors.clone();
         rarity      =rewardData.rarity==null?null:rewardData.rarity.clone();
@@ -62,21 +69,34 @@ public class RewardData {
         colorType   =rewardData.colorType;
         cardText    =rewardData.cardText;
         matchAllSubTypes    =rewardData.matchAllSubTypes;
+        matchAllColors =rewardData.matchAllColors;
+        cardUnion         =rewardData.cardUnion==null?null:rewardData.cardUnion.clone();
+        rotation          =rewardData.rotation==null?null:rewardData.rotation.clone();
+        deckNeeds         =rewardData.deckNeeds==null?null:rewardData.deckNeeds.clone();
     }
 
     private static Iterable<PaperCard> allCards;
     private static Iterable<PaperCard> allEnemyCards;
 
-    private void initializeAllCards(){
+    static private void initializeAllCards(){
         RewardData legals = Config.instance().getConfigData().legalCards;
-        if(legals==null) allCards = FModel.getMagicDb().getCommonCards().getUniqueCardsNoAltNoOnline();
-        else             allCards = Iterables.filter(FModel.getMagicDb().getCommonCards().getUniqueCardsNoAltNoOnline(),  new CardUtil.CardPredicate(legals, true));
+        if(legals==null)
+            allCards = FModel.getMagicDb().getCommonCards().getUniqueCardsNoAlt();
+        else
+            allCards = Iterables.filter(FModel.getMagicDb().getCommonCards().getUniqueCardsNoAlt(),  new CardUtil.CardPredicate(legals, true));
         //Filter out specific cards.
         allCards = Iterables.filter(allCards,  new Predicate<PaperCard>() {
             @Override
             public boolean apply(PaperCard input){
-                if(input == null) return false;
-                if(Arrays.asList(Config.instance().getConfigData().restrictedEditions).contains(input.getEdition())) return false;
+                if(input == null)
+                    return false;
+                if (Iterables.contains(input.getRules().getMainPart().getKeywords(), "Remove CARDNAME from your deck before playing if you're not playing for ante."))
+                   return false;
+                if(input.getRules().getAiHints().getRemNonCommanderDecks())
+                    return false;
+                if(Arrays.asList(Config.instance().getConfigData().restrictedEditions).contains(input.getEdition()))
+                    return false;
+
                 return !Arrays.asList(Config.instance().getConfigData().restrictedCards).contains(input.getName());
             }
         });
@@ -90,7 +110,7 @@ public class RewardData {
         });
     }
 
-    public Iterable<PaperCard> getAllCards() {
+    static public Iterable<PaperCard> getAllCards() {
         if(allCards == null) initializeAllCards();
         return allCards;
     }
@@ -104,23 +124,23 @@ public class RewardData {
         if(probability == 0 || WorldSave.getCurrentSave().getWorld().getRandom().nextFloat() <= probability) {
             if(type==null || type.isEmpty())
                 type="randomCard";
-            int addedCount = (addMaxCount > 0 ? WorldSave.getCurrentSave().getWorld().getRandom().nextInt(addMaxCount) : 0);
-            if( colors != null && colors.length > 0 ) { //Filter special "colorID" case.
-                String C = Current.player().getColorIdentityLong();
-                for(int i = 0; i < colors.length; i++){
-                    if(colors[i].equals("colorID")){
-                        if(C.equals("colorless")) { //Colorless nullifies all other possible colors.
-                            //A quirk of the filter, but flavorful.
-                            colorType = "Colorless";
-                            colors = null;
-                            break;
-                        }
-                        else colors[i] = C;
-                    }
-                }
-            }
+            int maxCount=Math.round(addMaxCount*Current.player().getDifficulty().rewardMaxFactor);
+            int addedCount = (maxCount > 0 ? WorldSave.getCurrentSave().getWorld().getRandom().nextInt(maxCount) : 0);
 
             switch(type) {
+                case "Union":
+                    HashSet<PaperCard> pool = new HashSet<>();
+                    for (RewardData r : cardUnion) {
+                        pool.addAll(CardUtil.getPredicateResult(allCards, r));
+                    }
+                    ArrayList<PaperCard> finalPool = new ArrayList(pool);
+
+                    if (finalPool.size() > 0){
+                        for (int i = 0; i < count; i++) {
+                            ret.add(new Reward(finalPool.get(WorldSave.getCurrentSave().getWorld().getRandom().nextInt(finalPool.size()))));
+                        }
+                    }
+                    break;
                 case "card":
                 case "randomCard":
                     if( cardName != null && !cardName.isEmpty() ) {
@@ -134,7 +154,13 @@ public class RewardData {
                     }
                     break;
                 case "item":
-                    if(itemName!=null&&!itemName.isEmpty()) {
+                    if(itemNames!=null)
+                    {
+                        for(int i=0;i<count+addedCount;i++) {
+                            ret.add(new Reward(ItemData.getItem(itemNames[WorldSave.getCurrentSave().getWorld().getRandom().nextInt(itemNames.length)])));
+                        }
+                    }
+                    else if(itemName!=null&&!itemName.isEmpty()) {
                         for(int i=0;i<count+addedCount;i++) {
                             ret.add(new Reward(ItemData.getItem(itemName)));
                         }
@@ -151,6 +177,10 @@ public class RewardData {
                     break;
                 case "life":
                     ret.add(new Reward(Reward.Type.Life, count + addedCount));
+                    break;
+                case "mana": //backwards compatibility for reward data
+                case "shards":
+                    ret.add(new Reward(Reward.Type.Shards, count + addedCount));
                     break;
             }
         }

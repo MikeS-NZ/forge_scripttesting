@@ -3,6 +3,7 @@ Name:Random Standard
 Name:Random Pioneer
 Name:Random Modern
 Name:Random Commander
+Name:Evolving Wilds
 Name:Amonkhet|Dir:Amonkhet|Sets:AKH, HOU, AKR
 Name:Jamuraa|Dir:jamuraa|Sets:5ED, ARN, MIR, VIS, WTH
 Name:Kamigawa|Dir:2004 Kamigawa|Sets:CHK, BOK, SOK
@@ -36,3 +37,4 @@ Name:Kaladesh|Sets:AER, KLD, MPS, KLR
 Name:Non-Block Sets|Sets:IKO, THB, ELD, WAR, RNA, GRN, DOM, HML, FEM, DRK, LEG, ATQ, ARN, JMP, CNS, CN2, BBD, MB1, MMA, MM2, EMA, MM3, IMA, A25, UMA, 2XM, ZNR, CMR, KHM
 Name:Tarkir|Sets:KTK, FRF, DTK
 Name:Alara|Sets:ALA, CFX, ARB
+Name:Kaldheim: The Battle for Kaldheim|Dir:2021-01 Kaldheim|Sets:KHM

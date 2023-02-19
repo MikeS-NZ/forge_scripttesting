@@ -54,6 +54,7 @@ public class RestartGameEffect extends SpellAbilityEffect {
 
         game.getStack().reset();
         game.clearCounterAddedThisTurn();
+        game.clearCounterRemovedThisTurn();
         game.setMonarch(null);
         game.setHasInitiative(null);
         game.setDayTime(null);
@@ -80,8 +81,7 @@ public class RestartGameEffect extends SpellAbilityEffect {
             }
 
             // special handling for Karn to filter out non-cards
-            CardCollection cmdCards = new CardCollection(p.getCardsIn(ZoneType.Command));
-            for (Card c : cmdCards) {
+            for (Card c : p.getCardsIn(ZoneType.Command)) {
                 if (c.isCommander()) {
                     newLibrary.add(c);
                 }

@@ -110,7 +110,7 @@ public final class AbilityFactory {
     }
 
     public static final SpellAbility getAbility(final String abString, final Card card) {
-        return getAbility(abString, card, card.getCurrentState());
+        return getAbility(abString, card.getCurrentState());
     }
     public static final SpellAbility getAbility(final String abString, final Card card, final IHasSVars sVarHolder) {
         return getAbility(abString, card.getCurrentState(), sVarHolder);
@@ -185,7 +185,8 @@ public final class AbilityFactory {
             String cost = mapParams.get("Cost");
             if (cost == null) {
                 if (type == AbilityRecordType.Spell) {
-                    if (state.getFirstAbility() != null && state.getFirstAbility().isSpell()) {
+                    SpellAbility firstAbility = state.getFirstAbility();
+                    if (firstAbility != null && firstAbility.isSpell()) {
                         // TODO might remove when Enchant Keyword is refactored
                         System.err.println(state.getName() + " already has Spell using mana cost");
                     }
@@ -302,8 +303,7 @@ public final class AbilityFactory {
         }
 
         if (spellAbility instanceof SpellApiBased && hostCard.isPermanent()) {
-            String desc = mapParams.containsKey("SpellDescription") ? mapParams.get("SpellDescription")
-                    : spellAbility.getHostCard().getName();
+            String desc = mapParams.getOrDefault("SpellDescription", spellAbility.getHostCard().getName());
             spellAbility.setDescription(desc);
         } else if (mapParams.containsKey("SpellDescription")) {
             spellAbility.rebuiltDescription();
@@ -334,7 +334,7 @@ public final class AbilityFactory {
         String tgtWhat = mapParams.get("ValidTgts");
         final String[] commonStuff = new String[] {
                 //list of common one word non-core type ValidTgts that should be lowercase in the target prompt
-                "Player", "Opponent", "Card"
+                "Player", "Opponent", "Card", "Spell", "Permanent"
         };
         if (Arrays.asList(commonStuff).contains(tgtWhat) || CardType.CoreType.isValidEnum(tgtWhat)) {
             tgtWhat = tgtWhat.toLowerCase();
@@ -359,8 +359,7 @@ public final class AbilityFactory {
             abTgt.setMaxTotalPower(mapParams.get("MaxTotalTargetPower"));
         }
 
-        // TargetValidTargeting most for Counter: e.g. target spell that
-        // targets X.
+        // TargetValidTargeting most for Counter: e.g. target spell that targets X.
         if (mapParams.containsKey("TargetValidTargeting")) {
             abTgt.setSAValidTargeting(mapParams.get("TargetValidTargeting"));
         }

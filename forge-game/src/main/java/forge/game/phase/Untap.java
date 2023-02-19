@@ -70,7 +70,7 @@ public class Untap extends Phase {
      */
     @Override
     public void executeAt() {
-        this.execute(this.at);
+        super.executeAt();
 
         doPhasing(game.getPhaseHandler().getPlayerTurn());
         doDayTime(game.getPhaseHandler().getPreviousPlayerTurn());
@@ -166,15 +166,13 @@ public class Untap extends Phase {
         }
 
         // other players untapping during your untap phase
-        List<Card> cardsWithKW = CardLists.getKeyword(game.getCardsIn(ZoneType.Battlefield),
+        List<Card> cardsWithKW = CardLists.getKeyword(player.getAllOtherPlayers().getCardsIn(ZoneType.Battlefield),
                 "CARDNAME untaps during each other player's untap step.");
         cardsWithKW = CardLists.getNotKeyword(cardsWithKW, "This card doesn't untap.");
-        cardsWithKW = CardLists.filterControlledBy(cardsWithKW, player.getAllOtherPlayers());
 
-        List<Card> cardsWithKW2 = CardLists.getKeyword(game.getCardsIn(ZoneType.Battlefield),
+        List<Card> cardsWithKW2 = CardLists.getKeyword(player.getOpponents().getCardsIn(ZoneType.Battlefield),
                 "CARDNAME untaps during each opponent's untap step.");
         cardsWithKW2 = CardLists.getNotKeyword(cardsWithKW2, "This card doesn't untap.");
-        cardsWithKW2 = CardLists.filterControlledBy(cardsWithKW2, player.getOpponents());
 
         cardsWithKW.addAll(cardsWithKW2);
         for (final Card cardWithKW : cardsWithKW) {
@@ -236,7 +234,7 @@ public class Untap extends Phase {
         if (c.hasKeyword("You may choose not to untap CARDNAME during your untap step.") && c.isTapped()) {
             StringBuilder prompt = new StringBuilder("Untap " + c.toString() + "?");
             boolean defaultChoice = true;
-            if (c.getGainControlTargets().size() > 0) {
+            if (c.hasGainControlTarget()) {
                 final Iterable<Card> targets = c.getGainControlTargets();
                 prompt.append("\r\n").append(c).append(" is controlling: ");
                 for (final Card target : targets) {
@@ -255,11 +253,11 @@ public class Untap extends Phase {
 
     private static void doPhasing(final Player turn) {
         // Needs to include phased out cards
-        final List<Card> list = CardLists.filter(turn.getCardsIncludePhasingIn(ZoneType.Battlefield), new Predicate<Card>() {
+        final List<Card> list = CardLists.filter(turn.getGame().getCardsIncludePhasingIn(ZoneType.Battlefield), new Predicate<Card>() {
 
             @Override
             public boolean apply(final Card c) {
-                return (c.isPhasedOut() && c.isDirectlyPhasedOut()) || c.hasKeyword(Keyword.PHASING);
+                return (c.isPhasedOut(turn) && c.isDirectlyPhasedOut()) || (c.hasKeyword(Keyword.PHASING) && c.getController().equals(turn));
             }
         });
 
@@ -271,7 +269,7 @@ public class Untap extends Phase {
             if (c.isPhasedOut()) {
                 c.phase(true);
             } else if (c.hasKeyword(Keyword.PHASING)) {
-                // 702.23g If an object would simultaneously phase out directly
+                // CR 702.26h If an object would simultaneously phase out directly
                 // and indirectly, it just phases out indirectly.
                 if (c.isAttachment()) {
                     final Card ent = c.getAttachedTo();

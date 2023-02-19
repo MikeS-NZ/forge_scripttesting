@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import forge.gamemodes.net.event.UpdateLobbyPlayerEvent;
 import org.apache.commons.lang3.StringUtils;
 
 import com.badlogic.gdx.utils.Align;
@@ -489,7 +490,7 @@ public class PlayerPanel extends FContainer {
     @Override
     protected void drawOverlay(Graphics g) {
         float y = getHeight() - FList.LINE_THICKNESS / 2;
-        g.drawLine(FList.LINE_THICKNESS, FList.LINE_COLOR, 0, y, getWidth(), y);
+        g.drawLine(FList.LINE_THICKNESS, FList.getLineColor(), 0, y, getWidth(), y);
     }
 
     private final FEventHandler humanAiSwitched = new FEventHandler() {
@@ -554,6 +555,7 @@ public class PlayerPanel extends FContainer {
                         && StringUtils.isAlphanumericSpace(newName) && prefs.getPref(FPref.PLAYER_NAME) != newName) {
                     prefs.setPref(FPref.PLAYER_NAME, newName);
                     prefs.save();
+                    screen.getLobby().applyToSlot(index, UpdateLobbyPlayerEvent.nameUpdate(newName));
                     if (allowNetworking) {
                         screen.firePlayerChangeListener(index);
                     }
@@ -848,6 +850,7 @@ public class PlayerPanel extends FContainer {
                         if (index == 0) {
                             prefs.setPref(FPref.PLAYER_NAME, newName);
                             prefs.save();
+                            screen.getLobby().applyToSlot(index, UpdateLobbyPlayerEvent.nameUpdate(newName));
                         }
                         if (allowNetworking) {
                             screen.firePlayerChangeListener(index);

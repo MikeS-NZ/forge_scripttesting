@@ -36,6 +36,7 @@
 	"Gargoyle 2",
 	"Golem",
 	"Sliver",
+	"Symbiote",
 	"Black Wiz1",
 	"Black Wiz2",
 	"Black Wiz3",
@@ -51,13 +52,17 @@
 	"White Wiz1",
 	"White Wiz2",
 	"White Wiz3",
-	"Doppelganger"
+	"Doppelganger",
+	"Pirate"
 ],
 "pointsOfInterest": [
+	"Spawn",
 	"Final Castle",
 	"Colorless Castle",
 	"Skep",
-	"Waste Town",
+	"Waste Town Generic",
+	"Waste Town Identity",
+	"Waste Town Tribal",
 	"Fort",
 	"Fort1",
 	"Fort2",
@@ -87,7 +92,12 @@
 	"CaveC9",
 	"CaveCA",
 	"CaveCB",
-	"CaveCD"
+	"CaveCD",
+	"Crawlspace",
+	"Dream Halls",
+	"Lich's Mirror",
+	"Kobold Mine",
+	"Slime Cave"
 ],
 "structures": [
 	{

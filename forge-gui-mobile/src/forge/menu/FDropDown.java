@@ -7,19 +7,29 @@ import forge.Graphics;
 import forge.assets.FSkinColor;
 import forge.assets.FSkinColor.Colors;
 import forge.assets.FSkinTexture;
-import forge.gui.GuiBase;
 import forge.screens.FScreen;
+import forge.screens.match.views.VDevMenu;
+import forge.screens.match.views.VGameMenu;
+import forge.screens.match.views.VLog;
+import forge.screens.match.views.VPlayers;
+import forge.screens.match.views.VReveal;
+import forge.screens.match.views.VStack;
 import forge.toolbox.FContainer;
 import forge.toolbox.FDisplayObject;
 import forge.toolbox.FOverlay;
 import forge.toolbox.FScrollPane;
 
 public abstract class FDropDown extends FScrollPane {
-    public static final FSkinColor BORDER_COLOR = FSkinColor.get(Colors.CLR_BORDERS);
+    public static FSkinColor getBorderColor() {
+        if (Forge.isMobileAdventureMode)
+            return FSkinColor.get(Colors.ADV_CLR_BORDERS);
+        return FSkinColor.get(Colors.CLR_BORDERS);
+    }
 
     private Backdrop backdrop;
     private FMenuTab menuTab;
     private FContainer dropDownContainer;
+    private FDisplayObject selectedChild;
     protected ScrollBounds paneSize;
 
     public FDropDown() {
@@ -29,6 +39,7 @@ public abstract class FDropDown extends FScrollPane {
     public FMenuTab getMenuTab() {
         return menuTab;
     }
+
     public void setMenuTab(FMenuTab menuTab0) {
         menuTab = menuTab0;
     }
@@ -36,6 +47,7 @@ public abstract class FDropDown extends FScrollPane {
     public FContainer getDropDownContainer() {
         return dropDownContainer;
     }
+
     public void setDropDownContainer(FContainer dropDownContainer0) {
         dropDownContainer = dropDownContainer0;
     }
@@ -65,6 +77,14 @@ public abstract class FDropDown extends FScrollPane {
         setVisible(false);
     }
 
+    public void setNextSelected() {
+        scrollToHoveredChild(true);
+    }
+
+    public void setPreviousSelected() {
+        scrollToHoveredChild(false);
+    }
+
     @Override
     public boolean press(float x, float y) {
         return true; //prevent auto-hiding when drop down pressed
@@ -90,7 +110,9 @@ public abstract class FDropDown extends FScrollPane {
 
     @Override
     public void setVisible(boolean visible0) {
-        if (isVisible() == visible0) { return; }
+        if (isVisible() == visible0) {
+            return;
+        }
 
         //add/remove drop down from its container, current screen, or top overlay when its visibility changes
         FContainer container = getContainer();
@@ -103,8 +125,7 @@ public abstract class FDropDown extends FScrollPane {
                 container.add(backdrop);
             }
             container.add(this);
-        }
-        else {
+        } else {
             container.remove(this);
             if (backdrop != null) {
                 backdrop.setVisible(false);
@@ -120,10 +141,13 @@ public abstract class FDropDown extends FScrollPane {
     }
 
     protected abstract boolean autoHide();
+
     protected abstract ScrollBounds updateAndGetPaneSize(float maxWidth, float maxVisibleHeight);
 
     protected void updateSizeAndPosition() {
-        if (menuTab == null) { return; }
+        if (menuTab == null) {
+            return;
+        }
 
         Rectangle boundary = Forge.getCurrentScreen().getDropDownBoundary();
 
@@ -134,8 +158,7 @@ public abstract class FDropDown extends FScrollPane {
         if (y < boundary.y + boundary.height / 2) {
             showAbove = false;
             maxVisibleHeight = boundary.y + boundary.height - y; //prevent covering prompt
-        }
-        else { //handle drop downs at near bottom of screen
+        } else { //handle drop downs at near bottom of screen
             showAbove = true;
             y = menuTab.screenPos.y;
             maxVisibleHeight = y - boundary.y;
@@ -166,8 +189,8 @@ public abstract class FDropDown extends FScrollPane {
     protected void drawBackground(Graphics g) {
         float w = getWidth();
         float h = getHeight();
-        g.drawImage(FSkinTexture.BG_TEXTURE, 0, 0, w, h);
-        g.fillRect(FScreen.TEXTURE_OVERLAY_COLOR, 0, 0, w, h);
+        g.drawImage(Forge.isMobileAdventureMode ? FSkinTexture.ADV_BG_TEXTURE : FSkinTexture.BG_TEXTURE, 0, 0, w, h);
+        g.fillRect(FScreen.getTextureOverlayColor(), 0, 0, w, h);
     }
 
     protected boolean drawAboveOverlay() {
@@ -179,7 +202,32 @@ public abstract class FDropDown extends FScrollPane {
         super.drawOverlay(g);
         float w = getWidth();
         float h = getHeight();
-        g.drawRect(2, BORDER_COLOR, 0, 0, w, h); //ensure border shows up on all sides
+        g.drawRect(2, getBorderColor(), 0, 0, w, h); //ensure border shows up on all sides
+        if (getDropDownOwner() instanceof FMenuTab) {
+            try {
+                if (getScrollLeft() > 0) {
+                    float x = getIndicatorMargin();
+                    float y = getHeight() / 2;
+                    g.fillTriangle(getIndicatorColor(), x, y, x + getIndicatorSize(), y - getIndicatorSize(), x + getIndicatorSize(), y + getIndicatorSize());
+                }
+                if (getScrollLeft() < getMaxScrollLeft()) {
+                    float x = getWidth() - getIndicatorMargin();
+                    float y = getHeight() / 2;
+                    g.fillTriangle(getIndicatorColor(), x, y, x - getIndicatorSize(), y - getIndicatorSize(), x - getIndicatorSize(), y + getIndicatorSize());
+                }
+                if (getScrollTop() > 0) {
+                    float x = getWidth() / 2;
+                    float y = getIndicatorMargin();
+                    g.fillTriangle(getIndicatorColor(), x, y, x - getIndicatorSize(), y + getIndicatorSize(), x + getIndicatorSize(), y + getIndicatorSize());
+                }
+                if (getScrollTop() < getMaxScrollTop()) {
+                    float x = getWidth() / 2;
+                    float y = getHeight() - getIndicatorSize();
+                    g.fillTriangle(getIndicatorColor(), x, y, x - getIndicatorSize(), y - getIndicatorSize(), x + getIndicatorSize(), y - getIndicatorSize());
+                }
+            } catch (Exception e) {
+            }
+        }
     }
 
     protected FDisplayObject getDropDownOwner() {
@@ -191,13 +239,43 @@ public abstract class FDropDown extends FScrollPane {
         return owner == null || !owner.screenPos.contains(x, y); //auto-hide when backdrop pressed unless over owner
     }
 
+    public void tapChild() {
+        if (selectedChild != null) {
+            selectedChild.tap(0, 0, 1);
+            if (getMenuTab() != null)
+                getMenuTab().clearSelected();
+            if (autoHide())
+                hide();
+        }
+    }
+
+    public void cancel() {
+        if (getMenuTab() != null)
+            getMenuTab().clearSelected();
+        hide();
+    }
+
+    public void scrollToHoveredChild(boolean down) {
+        selectedChild = null;
+        for (FDisplayObject fDisplayObject : getChildren()) {
+            if (fDisplayObject.isHovered()) {
+                //System.out.println(fDisplayObject.screenPos.x+"|"+fDisplayObject.screenPos.y);
+                float mod = down ? 0 : -fDisplayObject.screenPos.height;
+                float y = fDisplayObject.screenPos.y + mod;
+                scrollIntoView(fDisplayObject.screenPos.x, y, fDisplayObject.screenPos.width, fDisplayObject.screenPos.height, 0);
+                selectedChild = fDisplayObject;
+                break;
+            }
+        }
+    }
+
     protected boolean preventOwnerHandlingBackupTap(float x, float y, int count) {
         //prevent owner handling this tap unless it's a sub menu and not over it
         FDisplayObject owner = getDropDownOwner();
         if (owner instanceof FSubMenu) {
             return owner.contains(owner.getLeft() + owner.screenToLocalX(x), owner.getTop() + owner.screenToLocalY(y));
         }
-        return true; 
+        return true;
     }
 
     private class Backdrop extends FDisplayObject {
@@ -214,7 +292,9 @@ public abstract class FDropDown extends FScrollPane {
 
         @Override
         public boolean tap(float x, float y, int count) {
-            if (!isVisible()) { return false; }
+            if (!isVisible()) {
+                return false;
+            }
             hide(); //always hide if tapped
 
             return preventOwnerHandlingBackupTap(x, y, count);
@@ -222,21 +302,21 @@ public abstract class FDropDown extends FScrollPane {
 
         @Override
         public boolean pan(float x, float y, float deltaX, float deltaY, boolean moreVertical) {
-            if (!GuiBase.isAndroid())
+            if (!isMatchHeader())
                 hide(); //always hide if backdrop panned
             return false; //allow pan to pass through to object behind backdrop
         }
 
         @Override
         public boolean fling(float velocityX, float velocityY) {
-            if (!GuiBase.isAndroid())
+            if (!isMatchHeader())
                 hide(); //always hide if backdrop flung
             return false; //allow fling to pass through to object behind backdrop
         }
 
         @Override
         public boolean zoom(float x, float y, float amount) {
-            if (!GuiBase.isAndroid())
+            if (!isMatchHeader())
                 hide(); //always hide if backdrop zoomed
             return false; //allow zoom to pass through to object behind backdrop
         }
@@ -245,5 +325,21 @@ public abstract class FDropDown extends FScrollPane {
         public void draw(Graphics g) {
             //draw nothing for backdrop
         }
+    }
+
+    private boolean isMatchHeader() {
+        if (this instanceof VGameMenu)
+            return true;
+        if (this instanceof VPlayers)
+            return true;
+        if (this instanceof VReveal)
+            return true;
+        if (this instanceof VLog)
+            return true;
+        if (this instanceof VDevMenu)
+            return true;
+        if (this instanceof VStack)
+            return true;
+        return false;
     }
 }

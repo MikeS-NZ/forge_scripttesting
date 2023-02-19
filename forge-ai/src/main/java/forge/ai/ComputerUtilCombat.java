@@ -200,8 +200,8 @@ public class ComputerUtilCombat {
             return 0;
         }
 
-        damage += predictPowerBonusOfAttacker(attacker, null, combat, withoutAbilities);
         if (!attacker.hasKeyword(Keyword.INFECT)) {
+            damage += predictPowerBonusOfAttacker(attacker, null, combat, withoutAbilities);
             sum = predictDamageTo(attacked, damage, attacker, true);
             if (attacker.hasDoubleStrike()) {
                 sum *= 2;
@@ -328,10 +328,10 @@ public class ComputerUtilCombat {
                 if (blockers.size() == 0
                         || StaticAbilityAssignCombatDamageAsUnblocked.assignCombatDamageAsUnblocked(attacker)) {
                     unblocked.add(attacker);
-                } else if (attacker.hasKeyword(Keyword.TRAMPLE)
-                        && getAttack(attacker) > totalShieldDamage(attacker, blockers)) {
-                    if (!attacker.hasKeyword(Keyword.INFECT)) {
-                        damage += getAttack(attacker) - totalShieldDamage(attacker, blockers);
+                } else if (attacker.hasKeyword(Keyword.TRAMPLE) && !attacker.hasKeyword(Keyword.INFECT)) {
+                    int dmgAfterShielding = getAttack(attacker) - totalShieldDamage(attacker, blockers);
+                    if (dmgAfterShielding > 0) {
+                        damage += dmgAfterShielding;
                     }
                 }
             }
@@ -369,13 +369,14 @@ public class ComputerUtilCombat {
             if (blockers.size() == 0
                     || StaticAbilityAssignCombatDamageAsUnblocked.assignCombatDamageAsUnblocked(attacker)) {
                 unblocked.add(attacker);
-            } else if (attacker.hasKeyword(Keyword.TRAMPLE)
-                    && getAttack(attacker) > totalShieldDamage(attacker, blockers)) {
+            } else if (attacker.hasKeyword(Keyword.TRAMPLE)) {
                 int trampleDamage = getAttack(attacker) - totalShieldDamage(attacker, blockers);
-                if (attacker.hasKeyword(Keyword.INFECT)) {
-                    poison += trampleDamage;
+                if (trampleDamage > 0) {
+                    if (attacker.hasKeyword(Keyword.INFECT)) {
+                        poison += trampleDamage;
+                    }
+                    poison += predictPoisonFromTriggers(attacker, ai, trampleDamage);
                 }
-                poison += predictPoisonFromTriggers(attacker, ai, trampleDamage);
             }
         }
 
@@ -387,7 +388,7 @@ public class ComputerUtilCombat {
     public static List<Card> getLifeThreateningCommanders(final Player ai, final Combat combat) {
         List<Card> res = Lists.newArrayList();
         for (Card c : combat.getAttackers()) {
-            if (c.isCommander()) {
+            if (c.isCommander() && combat.isAttacking(c, ai)) {
                 int currentCommanderDamage = ai.getCommanderDamage(c);
                 if (damageIfUnblocked(c, ai, combat, false) + currentCommanderDamage >= 21) {
                     res.add(c);
@@ -518,7 +519,7 @@ public class ComputerUtilCombat {
             return true;
         }
 
-        return resultingPoison(ai, combat) > 9;
+        return resultingPoison(ai, combat) >= ai.getGame().getRules().getPoisonCountersToLose();
     }
 
     // This calculates the amount of damage a blockgang can deal to the attacker
@@ -686,7 +687,7 @@ public class ComputerUtilCombat {
         final int defenderDefense = blocker.getLethalDamage() - flankingMagnitude + defBushidoMagnitude;
 
         return defenderDefense;
-    } // shieldDamage
+    }
 
     // For AI safety measures like Regeneration
     /**
@@ -1207,6 +1208,8 @@ public class ComputerUtilCombat {
             theTriggers.addAll(blocker.getTriggers());
         }
 
+        // TODO consider Exert + Enlist
+
         // look out for continuous static abilities that only care for attacking creatures
         if (!withoutCombatStaticAbilities) {
             final CardCollectionView cardList = CardCollection.combine(game.getCardsIn(ZoneType.Battlefield), game.getCardsIn(ZoneType.Command));
@@ -1253,7 +1256,7 @@ public class ComputerUtilCombat {
                 continue;
             }
 
-            sa.setActivatingPlayer(source.getController());
+            sa.setActivatingPlayer(source.getController(), true);
 
             if (sa.hasParam("Cost")) {
                 if (!CostPayment.canPayAdditionalCosts(sa.getPayCosts(), sa)) {
@@ -1286,8 +1289,8 @@ public class ComputerUtilCombat {
                 power += Integer.parseInt(att);
             } else {
                 String bonus = AbilityUtils.getSVar(sa, att);
-                if (bonus.contains("TriggerCount$NumBlockers")) {
-                    bonus = TextUtil.fastReplace(bonus, "TriggerCount$NumBlockers", "Number$1");
+                if (bonus.contains("Count$Valid Creature.blockingTriggeredAttacker")) {
+                    bonus = TextUtil.fastReplace(bonus, "Count$Valid Creature.blockingTriggeredAttacker", "Number$1");
                 } else if (bonus.contains("TriggeredPlayersDefenders$Amount")) { // for Melee
                     bonus = TextUtil.fastReplace(bonus, "TriggeredPlayersDefenders$Amount", "Number$1");
                 } else if (bonus.contains("TriggeredAttacker$CardPower")) { // e.g. Arahbo, Roar of the World
@@ -1433,7 +1436,7 @@ public class ComputerUtilCombat {
             if (sa == null) {
                 continue;
             }
-            sa.setActivatingPlayer(source.getController());
+            sa.setActivatingPlayer(source.getController(), true);
 
             if (sa.usesTargeting()) {
                 continue; // targeted pumping not supported
@@ -1475,8 +1478,8 @@ public class ComputerUtilCombat {
                     toughness += Integer.parseInt(def);
                 } else {
                     String bonus = AbilityUtils.getSVar(sa, def);
-                    if (bonus.contains("TriggerCount$NumBlockers")) {
-                        bonus = TextUtil.fastReplace(bonus, "TriggerCount$NumBlockers", "Number$1");
+                    if (bonus.contains("Count$Valid Creature.blockingTriggeredAttacker")) {
+                        bonus = TextUtil.fastReplace(bonus, "Count$Valid Creature.blockingTriggeredAttacker", "Number$1");
                     } else if (bonus.contains("TriggeredPlayersDefenders$Amount")) { // for Melee
                         bonus = TextUtil.fastReplace(bonus, "TriggeredPlayersDefenders$Amount", "Number$1");
                     }
@@ -1507,8 +1510,8 @@ public class ComputerUtilCombat {
                     toughness += Integer.parseInt(def);
                 } else {
                     String bonus = AbilityUtils.getSVar(sa, def);
-                    if (bonus.contains("TriggerCount$NumBlockers")) {
-                        bonus = TextUtil.fastReplace(bonus, "TriggerCount$NumBlockers", "Number$1");
+                    if (bonus.contains("Count$Valid Creature.blockingTriggeredAttacker")) {
+                        bonus = TextUtil.fastReplace(bonus, "Count$Valid Creature.blockingTriggeredAttacker", "Number$1");
                     } else if (bonus.contains("TriggeredPlayersDefenders$Amount")) { // for Melee
                         bonus = TextUtil.fastReplace(bonus, "TriggeredPlayersDefenders$Amount", "Number$1");
                     }
@@ -2053,7 +2056,6 @@ public class ComputerUtilCombat {
         if (block.size() == 1) {
             final Card blocker = block.getFirst();
 
-            // trample
             if (hasTrample) {
                 int dmgToKill = getEnoughDamageToKill(blocker, dmgCanDeal, attacker, true);
 
@@ -2109,7 +2111,7 @@ public class ComputerUtilCombat {
             }
         }
         return damageMap;
-    } // setAssignedDamage()
+    }
 
     // how much damage is enough to kill the creature (for AI)
     /**
@@ -2475,11 +2477,13 @@ public class ComputerUtilCombat {
                     }
                 }
                 poison += pd;
-                if (pd > 0 && attacker.hasDoubleStrike()) {
-                    poison += pd;
-                }
                 // TODO: Predict replacement effects for counters (doubled, reduced, additional counters, etc.)
             }
+            // intern toxic effect
+            poison += attacker.getKeywordMagnitude(Keyword.TOXIC);
+        }
+        if (attacker.hasDoubleStrike()) {
+            poison *= 2;
         }
         return poison;
     }
@@ -2489,7 +2493,7 @@ public class ComputerUtilCombat {
         if (combat != null) {
             // 1. If the card that spawned the attacker was sent at a planeswalker, attack the same. Consider improving.
             GameEntity def = combat.getDefenderByAttacker(sa.getHostCard());
-            if (def != null && def instanceof Card && ((Card)def).isPlaneswalker() && defenders.contains(def)) {
+            if (def instanceof Card && ((Card)def).isPlaneswalker() && defenders.contains(def)) {
                 return def;
             }
             // 2. Otherwise, go through the list of options one by one, choose the first one that can't be blocked profitably.

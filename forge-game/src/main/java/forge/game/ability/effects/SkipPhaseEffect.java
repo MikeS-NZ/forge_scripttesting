@@ -17,7 +17,7 @@ import forge.game.trigger.TriggerType;
 import forge.game.zone.ZoneType;
 
 public class SkipPhaseEffect extends SpellAbilityEffect {
-    
+
     @Override
     protected String getStackDescription(SpellAbility sa) {
         final StringBuilder sb = new StringBuilder();
@@ -58,7 +58,7 @@ public class SkipPhaseEffect extends SpellAbilityEffect {
             final String duration, final String phase, final String step) {
         final Card hostCard = sa.getHostCard();
         final Game game = hostCard.getGame();
-        final String name = hostCard.getName() + "'s Effect";
+        final String name = hostCard + "'s Effect";
         final String image = hostCard.getImageKey();
         final boolean isNextThisTurn = duration != null && duration.equals("NextThisTurn");
 

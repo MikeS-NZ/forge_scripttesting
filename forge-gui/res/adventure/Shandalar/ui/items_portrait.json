@@ -5,10 +5,11 @@
   "elements": [
     {
       "type": "Image",
-      "name": "lastScreen",
+      "name": "rewards_background",   
+      "image": "ui/reward_portrait.png",
       "width": 270,
       "height": 480
-    },      
+    },
     {
       "type": "Image",
       "name": "market_background",   
@@ -25,21 +26,61 @@
     },
     {
       "type": "TextButton",
-      "name": "done",
-      "text": "Take all",
+      "name": "detail",
+      "text": "Detail",
+      "binding": "Equip",
       "width": 128,
       "height": 32,
       "x": 140,
-      "y": 405
+      "y": 350
+    }  ,
+    {
+      "type": "TextButton",
+      "name": "done",
+      "text": "tr(lblLeave)",
+      "binding": "Back",
+      "width": 128,
+      "height": 32,
+      "x": 140,
+      "y": 435
     }  ,
     {
       "type": "Label",
-      "name": "gold",
-      "text": "$",
+      "name": "playerGold",
+      "text": "[+Gold]",
       "width": 128,
       "height": 32,
       "x": 16,
       "y": 405
+    },
+	{
+      "type": "TextButton",
+      "name": "restock",
+      "text": "Restock",
+      "width": 128,
+      "height": 30,
+      "x": 140,
+      "y": 405
+    },
+	{
+      "type": "Label",
+      "name": "playerShards",
+      "text": "[+Shards]",
+	  "style":"background",
+      "width": 128,
+      "height": 32,
+      "x": 16,
+      "y": 435
+    },
+    {
+      "type": "Label",
+      "name": "shopName",
+      "style":"background",
+      "text": "A Street Market",
+      "width": 48,
+      "height": 20,
+      "x": 200,
+      "y": 0
     }
   ]
 }

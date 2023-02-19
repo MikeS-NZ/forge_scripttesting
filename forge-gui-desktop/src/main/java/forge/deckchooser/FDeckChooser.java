@@ -581,11 +581,21 @@ public class FDeckChooser extends JPanel implements IDecksComboBoxListener {
         refreshDecksList(ev.getDeckType(), false, ev);
     }
 
-    public void refreshDeckListForAI(){
+    public void refreshDeckListForAI() {
         //remember current deck by name, refresh decklist for AI/Human then reselect if possible
-        String currentName= lstDecks.getSelectedItem().getName();
-        refreshDecksList(selectedDeckType,true,null);
+        String currentName = lstDecks.getSelectedItem().getName();
+
+        UiCommand selectCmd = lstDecks.getSelectCommand();
+        // ignore selection changes while refreshing to avoid repeating some deck generator calls
+        lstDecks.setSelectCommand(null);
+
+        refreshDecksList(selectedDeckType, true, null);
+
         lstDecks.setSelectedString(currentName);
+
+        lstDecks.setSelectCommand(selectCmd);
+        lstDecks.refresh();
+
         saveState();
     }
 
@@ -830,9 +840,9 @@ public class FDeckChooser extends JPanel implements IDecksComboBoxListener {
         try {
             if (StringUtils.isBlank(savedState)) {
                 return new ArrayList<>();
-            } else {
-                return Arrays.asList(savedState.split(";")[1].split(SELECTED_DECK_DELIMITER));
             }
+            final String[] parts = savedState.split(";", -1);
+            return Arrays.asList(parts[1].split(SELECTED_DECK_DELIMITER));
         } catch (final Exception ex) {
             System.err.println(ex + " [savedState=" + savedState + "]");
             return new ArrayList<>();

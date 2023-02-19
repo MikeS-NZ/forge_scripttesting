@@ -245,7 +245,7 @@ public class Cost implements Serializable {
                 this.isMandatory = true;
             } else {
                 CostPart cp = parseCostPart(part, tapCost, untapCost);
-                if (null != cp )
+                if (null != cp)
                     if (cp instanceof CostPartMana) {
                         parsedMana = (CostPartMana) cp;
                     } else {
@@ -254,7 +254,6 @@ public class Cost implements Serializable {
                 else
                     manaParts.append(part).append(" ");
             }
-
         }
 
         if (parsedMana == null && (manaParts.length() > 0 || xCantBe0)) {
@@ -289,13 +288,18 @@ public class Cost implements Serializable {
         }
 
         if (parse.startsWith("SubCounter<")) {
-            // SubCounter<NumCounters/CounterType>
+            // SubCounter<NumCounters/CounterType/{Type/Description/Zone}>
             final String[] splitStr = abCostParse(parse, 5);
             final String type = splitStr.length > 2 ? splitStr[2] : "CARDNAME";
             final String description = splitStr.length > 3 ? splitStr[3] : null;
             final ZoneType zone = splitStr.length > 4 ? ZoneType.smartValueOf(splitStr[4]) : ZoneType.Battlefield;
+            boolean oneOrMore = false;
+            if (splitStr[0].equals("X1+")) {
+                oneOrMore = true;
+                splitStr[0] = "X";
+            }
 
-            return new CostRemoveCounter(splitStr[0], CounterType.getType(splitStr[1]), type, description, zone);
+            return new CostRemoveCounter(splitStr[0], CounterType.getType(splitStr[1]), type, description, zone, oneOrMore);
         }
 
         if (parse.startsWith("AddCounter<")) {
@@ -320,6 +324,11 @@ public class Cost implements Serializable {
             final String[] splitStr = abCostParse(parse, 1);
             return new CostPayEnergy(splitStr[0]);
         }
+        if (parse.startsWith("PayShards<")) { //Adventure specific energy-esque tokens
+            // Payshards<ShardCost>
+            final String[] splitStr = abCostParse(parse, 1);
+            return new CostPayShards(splitStr[0]);
+        }
 
         if (parse.startsWith("GainLife<")) {
             // PayLife<LifeCost>
@@ -339,6 +348,13 @@ public class Cost implements Serializable {
             final String[] splitStr = abCostParse(parse, 2);
             final String description = splitStr.length > 1 ? splitStr[1] : null;
             return new CostUnattach(splitStr[0], description);
+        }
+
+        if (parse.startsWith("ChooseColor<")) {
+            // ChooseColor<NumToChoose>
+            //TODO expand this to set off different UI for Specialize
+            final String[] splitStr = abCostParse(parse, 1);
+            return new CostChooseColor(splitStr[0]);
         }
 
         if (parse.startsWith("ChooseCreatureType<")) {
@@ -394,7 +410,12 @@ public class Cost implements Serializable {
         if (parse.startsWith("RemoveAnyCounter<")) {
             final String[] splitStr = abCostParse(parse, 4);
             final String description = splitStr.length > 3 ? splitStr[3] : null;
-            return new CostRemoveAnyCounter(splitStr[0], CounterType.getType(splitStr[1]), splitStr[2], description);
+            boolean oneOrMore = false;
+            if (splitStr[0].equals("X1+")) {
+                oneOrMore = true;
+                splitStr[0] = "X";
+            }
+            return new CostRemoveAnyCounter(splitStr[0], CounterType.getType(splitStr[1]), splitStr[2], description, oneOrMore);
         }
 
         if (parse.startsWith("Exile<")) {
@@ -496,6 +517,12 @@ public class Cost implements Serializable {
             final String[] splitStr = abCostParse(parse, 3);
             final String description = splitStr.length > 2 ? splitStr[2] : null;
             return new CostExert(splitStr[0], splitStr[1], description);
+        }
+
+        if (parse.startsWith("Enlist<")) {
+            final String[] splitStr = abCostParse(parse, 3);
+            final String description = splitStr.length > 2 ? splitStr[2] : null;
+            return new CostEnlist(splitStr[0], splitStr[1], description);
         }
 
         if (parse.equals("RevealChosenPlayer")) {
@@ -867,7 +894,24 @@ public class Cost implements Serializable {
         return sb.toString();
     }
 
+    public void mergeTo(Cost source, int amt) {
+        // multiply to create the full cost
+        if (amt > 1) {
+            // to double itself we need to work on a copy
+            Cost sourceCpy = source.copy();
+            for (int i = 1; i < amt; ++i) {
+                // in theory setAmount could be used instead but it depends on the cost complexity (probably not worth trying to determine that first)
+                source.add(sourceCpy);
+            }
+        }
+        // combine costs (these shouldn't mix together)
+        this.add(source, false);
+    }
+
     public Cost add(Cost cost1) {
+        return add(cost1, true);
+    }
+    public Cost add(Cost cost1, boolean mergeAdditional) {
         CostPartMana costPart2 = this.getCostMana();
         List<CostPart> toRemove = Lists.newArrayList();
         for (final CostPart part : cost1.getCostParts()) {
@@ -890,9 +934,10 @@ public class Cost implements Serializable {
                 } else {
                     costParts.add(0, new CostPartMana(oldManaCost.toManaCost(), r));
                 }
-            } else if (part instanceof CostDiscard || part instanceof CostDraw ||
-                    part instanceof CostAddMana || part instanceof CostPayLife
-                    || part instanceof CostPutCounter || part instanceof CostTapType) {
+            } else if (part instanceof CostPutCounter || (mergeAdditional && // below usually not desired because they're from different causes
+                    (part instanceof CostDiscard || part instanceof CostDraw ||
+                    part instanceof CostAddMana || part instanceof CostPayLife ||
+                    part instanceof CostSacrifice || part instanceof CostTapType))) {
                 boolean alreadyAdded = false;
                 for (final CostPart other : costParts) {
                     if ((other.getClass().equals(part.getClass()) || (part instanceof CostPutCounter && ((CostPutCounter)part).getCounter().is(CounterEnumType.LOYALTY))) &&
@@ -900,7 +945,7 @@ public class Cost implements Serializable {
                             StringUtils.isNumeric(part.getAmount()) &&
                             StringUtils.isNumeric(other.getAmount())) {
                         String amount = String.valueOf(part.convertAmount() + other.convertAmount());
-                        if (part instanceof CostPutCounter) { // path for Carth & Cumulative Upkeep
+                        if (part instanceof CostPutCounter) { // CR 606.5 path for Carth
                             if (other instanceof CostPutCounter && ((CostPutCounter)other).getCounter().equals(((CostPutCounter) part).getCounter())) {
                                 costParts.add(new CostPutCounter(amount, ((CostPutCounter) part).getCounter(), part.getType(), part.getTypeDescription()));
                             } else if (other instanceof CostRemoveCounter && ((CostRemoveCounter)other).counter.is(CounterEnumType.LOYALTY)) {
@@ -909,11 +954,13 @@ public class Cost implements Serializable {
                                 if (counters < 0) {
                                     costParts.add(new CostPutCounter(String.valueOf(counters *-1), CounterType.get(CounterEnumType.LOYALTY), part.getType(), part.getTypeDescription()));
                                 } else {
-                                    costParts.add(new CostRemoveCounter(String.valueOf(counters), CounterType.get(CounterEnumType.LOYALTY), part.getType(), part.getTypeDescription(), ZoneType.Battlefield));
+                                    costParts.add(new CostRemoveCounter(String.valueOf(counters), CounterType.get(CounterEnumType.LOYALTY), part.getType(), part.getTypeDescription(), ZoneType.Battlefield, false));
                                 }
                             } else {
                                 continue;
                             }
+                        } else if (part instanceof CostSacrifice) {
+                            costParts.add(new CostSacrifice(amount, part.getType(), part.getTypeDescription()));
                         } else if (part instanceof CostDiscard) {
                             costParts.add(new CostDiscard(amount, part.getType(), part.getTypeDescription()));
                         } else if (part instanceof CostDraw) {

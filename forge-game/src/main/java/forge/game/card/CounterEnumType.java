@@ -184,6 +184,8 @@ public enum CounterEnumType {
     INFECTION("INFCT", 0, 230, 66),
 
     INGENUITY("INGTY", 67, 186, 205),
+    
+    INTEL("INTEL", 80, 250, 180),
 
     INTERVENTION("INTRV", 205, 203, 105),
 
@@ -240,8 +242,12 @@ public enum CounterEnumType {
     MUSIC("MUSIC", 255, 138, 255),
 
     MUSTER("MUSTR", 235, 196, 0),
+    
+    NECRODERMIS("NECRO", 80, 209, 250),
 
     NET("NET", 0, 221, 251),
+
+    OIL("OIL", 99, 102, 106),
 
     OMEN("OMEN", 255, 178, 120),
 
@@ -290,6 +296,8 @@ public enum CounterEnumType {
     P2P2("+2/+2", "+2/+2", 96, 226, 23),
 
     QUEST("QUEST", 251, 189, 0),
+    
+    REPRIEVE("REPR", 240, 120, 50),
 
     RITUAL("RITUAL", 155, 17, 30),
 
@@ -328,6 +336,8 @@ public enum CounterEnumType {
     STASH("STASH", 248, 191, 0),
 
     STORAGE("STORG", 255, 177, 121),
+    
+    STORY("STORY", 180, 72, 195),
 
     STRIFE("STRFE", 255, 89, 223),
 
@@ -380,6 +390,9 @@ public enum CounterEnumType {
     EXPERIENCE("EXP"),
 
     POISON("POISN"),
+
+    TICKET("TICKET"),
+    MANASHARDS("MANASHARDS"), //Adventure-specific mechanic
 
     // Keyword Counters
 /*

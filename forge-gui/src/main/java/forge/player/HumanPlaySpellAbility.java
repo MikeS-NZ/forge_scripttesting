@@ -41,6 +41,7 @@ import forge.game.player.Player;
 import forge.game.player.PlayerController;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.Zone;
+import forge.util.Localizer;
 
 /**
  * <p>
@@ -61,10 +62,12 @@ public class HumanPlaySpellAbility {
 
     public final boolean playAbility(final boolean mayChooseTargets, final boolean isFree, final boolean skipStack) {
         final Player human = ability.getActivatingPlayer();
-        final Game game = ability.getActivatingPlayer().getGame();
+        final Game game = human.getGame();
 
-        // CR 401.5: freeze top library cards until cast so player can't cheat and see the next
-        game.setTopLibsCast();
+        // CR 401.5: freeze top library cards until cast/activated so player can't cheat and see the next
+        if (!skipStack) {
+            game.setTopLibsCast();
+        }
 
         // used to rollback
         Zone fromZone = null;
@@ -91,6 +94,7 @@ public class HumanPlaySpellAbility {
 
         if (!ability.isCopied()) {
             ability.resetPaidHash();
+            ability.setPaidLife(0);
         }
 
         ability = GameActionUtil.addExtraKeywordCost(ability);
@@ -162,14 +166,18 @@ public class HumanPlaySpellAbility {
                 && ability.isLegalAfterStack()
                 && (isFree || payment.payCost(new HumanCostDecision(controller, human, ability, false, ability.getHostCard())));
 
+        game.clearTopLibsCast(ability);
+
         if (!prerequisitesMet) {
             if (!ability.isTrigger()) {
                 GameActionUtil.rollbackAbility(ability, fromZone, zonePosition, payment, c);
                 if (ability.getHostCard().isMadness()) {
                     // if a player failed to play madness cost, move the card to graveyard
                     Card newCard = game.getAction().moveToGraveyard(c, null);
-                    newCard.setMadnessWithoutCast(true);
+                    newCard.setDiscarded(true);
                 }
+            } else {
+                payment.refundPayment();
             }
 
             if (manaTypeConversion || manaColorConversion || keywordColor) {
@@ -179,7 +187,6 @@ public class HumanPlaySpellAbility {
                 manapool.restoreColorReplacements();
                 human.decNumManaConversion();
             }
-            game.clearTopLibsCast(ability);
             return false;
         }
 
@@ -205,7 +212,6 @@ public class HumanPlaySpellAbility {
                 manapool.restoreColorReplacements();
             }
         }
-        game.clearTopLibsCast(ability);
         return true;
     }
 
@@ -279,8 +285,12 @@ public class HumanPlaySpellAbility {
                     final int min = Integer.parseInt(ability.getParam("Min"));
                     final int max = Integer.parseInt(ability.getParam("Max"));
                     final int i = ability.getActivatingPlayer().getController().chooseNumber(ability,
-                            "Choose a number", min, max);
+                            Localizer.getInstance().getMessage("lblChooseNumber") , min, max);
                     ability.getHostCard().setChosenNumber(i);
+                }
+                if ("Opponent".equals(varName)) {
+                    Player opp = ability.getActivatingPlayer().getController().chooseSingleEntityForEffect(ability.getActivatingPlayer().getOpponents(), ability, Localizer.getInstance().getMessage("lblChooseAnOpponent"), null);
+                    ability.getHostCard().setChosenPlayer(opp);
                 }
             }
         }

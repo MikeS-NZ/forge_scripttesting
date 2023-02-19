@@ -45,7 +45,7 @@ public class UntapEffect extends SpellAbilityEffect {
         } else {
             final CardCollection untargetedCards = CardUtil.getRadiance(sa);
             for (final Card tgtC : getTargetCards(sa)) {
-                if (sa.usesTargeting() && !tgtC.canBeTargetedBy(sa)) {
+                if (tgtC.isPhasedOut()) {
                     continue;
                 }
                 if (tgtC.isInPlay()) {
@@ -72,7 +72,7 @@ public class UntapEffect extends SpellAbilityEffect {
      * <p>
      * Choose cards to untap.
      * </p>
-     * 
+     *
      * @param sa
      *            a {@link SpellAbility}.
      * @param mandatory
@@ -83,13 +83,17 @@ public class UntapEffect extends SpellAbilityEffect {
         final String valid = sa.getParam("UntapType");
 
         for (final Player p : AbilityUtils.getDefinedPlayers(sa.getHostCard(), sa.getParam("Defined"), sa)) {
+            if (!p.isInGame()) {
+                continue;
+            }
+
             CardCollectionView list = CardLists.getValidCards(p.getGame().getCardsIn(ZoneType.Battlefield),
                     valid, sa.getActivatingPlayer(), sa.getHostCard(), sa);
             list = CardLists.filter(list, Presets.TAPPED);
 
             final CardCollectionView selected = p.getController().chooseCardsForEffect(list, sa, Localizer.getInstance().getMessage("lblSelectCardToUntap"), mandatory ? num : 0, num, !mandatory, null);
             if (selected != null) {
-                for (final Card c : selected) { 
+                for (final Card c : selected) {
                     c.untap(true);
                 }
             }

@@ -9,7 +9,7 @@ SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
 SVar:TrigRemoveCounter:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Exile | Execute$ DBRemoveCounter | TriggerDescription$ At the beginning of your upkeep, if this card is exiled, remove a hone counter from it.
 SVar:DBRemoveCounter:DB$ RemoveCounter | Defined$ Self | CounterType$ HONE | CounterNum$ 1
 SVar:TrigCast:Mode$ CounterRemoved | TriggerZones$ Exile | ValidCard$ Card.Self | CounterType$ HONE | NewCounterAmount$ 0 | Execute$ DBCast | TriggerDescription$ When the last hone counter is removed from this card, if it's exiled, you may cast it. It costs {4} less to cast this way.
-SVar:DBCast:DB$ Play | Defined$ Self | PlayReduceCost$ 4 | ValidSA$ Spell
+SVar:DBCast:DB$ Play | Defined$ Self | PlayReduceCost$ 4 | ValidSA$ Spell | Optional$ True
 AlternateMode:Modal
 SVar:BuffedBy:Instant,Sorcery
 DeckHints:Type$Instant|Sorcery
@@ -23,10 +23,8 @@ Types:Legendary Creature Efreet Shaman
 PT:4/4
 T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | TriggerZones$ Battlefield | Execute$ TrigExile | TriggerDescription$ At the beginning of your upkeep, exile the top card of each opponent's library. Until end of turn, you may cast spells from among those exiled cards, and you may spend mana as though it were mana of any color to cast those spells.
 SVar:TrigExile:DB$ Dig | Defined$ Player.Opponent | DigNum$ 1 | ChangeNum$ All | DestinationZone$ Exile | RememberChanged$ True | SubAbility$ DBEffect | SpellDescription$ Exile the top card of each opponent's library. Until end of turn, you may cast nonland cards from among those exiled cards, and you may spend mana as though it were mana of any color to cast those spells.
-SVar:DBEffect:DB$ Effect | StaticAbilities$ STPlay | Triggers$ TriggerCast | RememberObjects$ Remembered | SubAbility$ DBCleanup
+SVar:DBEffect:DB$ Effect | StaticAbilities$ STPlay | ForgetOnMoved$ Exile | RememberObjects$ Remembered | SubAbility$ DBCleanup
 SVar:STPlay:Mode$ Continuous | MayPlay$ True | MayPlayIgnoreColor$ True | EffectZone$ Command | Affected$ Card.IsRemembered+nonLand | AffectedZone$ Exile | Description$ Until end of turn, you may cast that card and you may spend mana as though it were mana of any color to cast it.
-SVar:TriggerCast:Mode$ SpellCast | ValidCard$ Card.IsRemembered | TriggerZones$ Command | Execute$ TrigRemoveSelf | Static$ True
-SVar:TrigRemoveSelf:DB$ ChangeZone | Defined$ Self | Origin$ Command | Destination$ Exile
 SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
 T:Mode$ SpellCast | ValidCard$ Card.wasCastFromExile | ValidActivatingPlayer$ You | Execute$ TrigPutCounter | TriggerZones$ Battlefield | TriggerDescription$ Whenever you cast a spell from exile, put a +1/+1 counter on CARDNAME.
 SVar:TrigPutCounter:DB$ PutCounter | Defined$ Self | CounterType$ P1P1 | CounterNum$ 1

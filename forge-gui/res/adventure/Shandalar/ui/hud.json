@@ -61,8 +61,17 @@
       "font": "default",
       "width": 64,
       "height": 16,
-      "x": 442,
-      "y": 64
+      "x": 427,
+      "y": 56
+    },
+    {
+      "type": "Label",
+      "name": "shards",
+      "font": "default",
+      "width": 64,
+      "height": 16,
+      "x": 427,
+      "y": 73
     },
     {
       "type": "Label",
@@ -70,45 +79,74 @@
       "font": "default",
       "width": 64,
       "height": 16,
-      "x": 442,
-      "y": 82
+      "x": 427,
+      "y": 90
+    },
+	{
+      "type": "TextButton",
+      "name": "exittoworldmap", 
+	  "style":"menu",
+      "text": "[%125][+ExitToWorldMap]",
+	  "binding": "ExitToWorldMap",
+      "width": 48,
+      "height": 36,
+      "x": 424,
+      "y": 66
     },
     {
       "type": "TextButton",
       "name": "deck",
-      "text": "Deck",
-      "width": 40,
+	  "style":"menu",
+      "text": "[%125][+Deck]",
+      "binding": "Deck",
+      "width": 48,
       "height": 36,
-      "x": 428,
+      "x": 424,
       "y": 106
     }, 
     {
       "type": "TextButton",
-      "name": "inventory",
-      "text": "Inventory",
-      "width": 40,
+      "name": "inventory", 
+	  "style":"menu",
+      "text": "[%125][+Item]",
+      "binding": "Inventory",
+      "width": 48,
       "height": 36,
-      "x": 428,
+      "x": 424,
       "y": 146
     },
     
     {
       "type": "TextButton",
       "name": "statistic",
-      "text": "Status",
-      "width": 40,
+	  "style":"menu",
+      "text": "[%125][+Status]",
+      "binding": "Status",
+      "width": 48,
       "height": 36,
-      "x": 428,
+      "x": 424,
       "y": 186
     },
     {
       "type": "TextButton",
       "name": "menu",
-      "text": "Menu",
-      "width": 40,
+	  "style":"menu",
+      "text": "[%125][+Menu]",
+      "binding": "Menu",
+      "width": 48,
       "height": 36,
-      "x": 428,
+      "x": 424,
       "y": 226
+    },
+    {
+      "type": "TextButton",
+      "name": "openmap",
+      "text": "[%80]tr(lblZoom)",
+      "binding": "Map",
+      "width": 80,
+      "height": 18,
+      "x": 0,
+      "y": 80
     }
   ]
 }

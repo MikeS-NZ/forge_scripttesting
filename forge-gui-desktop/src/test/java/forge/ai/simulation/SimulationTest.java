@@ -33,21 +33,7 @@ import forge.model.FModel;
 public class SimulationTest {
     private static boolean initialized = false;
 
-    protected Game initAndCreateGame() {
-
-        if (!initialized) {
-            GuiBase.setInterface(new GuiDesktop());
-            FModel.initialize(null, new Function<ForgePreferences, Void>() {
-                @Override
-                public Void apply(ForgePreferences preferences) {
-                    preferences.setPref(FPref.LOAD_CARD_SCRIPTS_LAZILY, false);
-                    preferences.setPref(FPref.UI_LANGUAGE, "en-US");
-                    return null;
-                }
-            });
-            initialized = true;
-        }
-
+    public Game resetGame() {
         // need to be done after FModel.initialize, or the Localizer isn't loaded yet
         List<RegisteredPlayer> players = Lists.newArrayList();
         Deck d1 = new Deck();
@@ -61,6 +47,23 @@ public class SimulationTest {
         game.setAge(GameStage.Play);
 
         return game;
+    }
+
+    protected Game initAndCreateGame() {
+        if (!initialized) {
+            GuiBase.setInterface(new GuiDesktop());
+            FModel.initialize(null, new Function<ForgePreferences, Void>() {
+                @Override
+                public Void apply(ForgePreferences preferences) {
+                    preferences.setPref(FPref.LOAD_CARD_SCRIPTS_LAZILY, false);
+                    preferences.setPref(FPref.UI_LANGUAGE, "en-US");
+                    return null;
+                }
+            });
+            initialized = true;
+        }
+
+        return resetGame();
     }
 
     protected GameSimulator createSimulator(Game game, Player p) {
@@ -137,5 +140,11 @@ public class SimulationTest {
 
     protected Card addCard(String name, Player p) {
         return addCardToZone(name, p, ZoneType.Battlefield);
+    }
+
+    protected void addCards(String name, int count, Player p) {
+        for (int i = 0; i < count; i++) {
+            addCard(name, p);
+        }
     }
 }

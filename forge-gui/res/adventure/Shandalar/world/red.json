@@ -47,7 +47,9 @@
 	"Goblin Warrior",
 	"Hellhound",
 	"Immersturm Demon",
+	"Kavu",
 	"Khan",
+	"Mindclaw Shaman",
 	"Minotaur",
 	"Minotaur Flayer",
 	"Red Beast",
@@ -58,15 +60,21 @@
 	"Troll",
 	"Vampire Lord",
 	"Viashino",
+	"Wild-Magic Sorcerer",
 	"Yeti"
 ],
 "pointsOfInterest": [
 	"Red Castle",
-	"Mountain Town",
+	"Mountain Town Generic",
+	"Mountain Town Identity",
+	"Mountain Town Tribal",
+	"Mountain Capital",
 	"YuleTown",
 	"BarbarianCamp",
 	"BarbarianCamp1",
 	"BarbarianCamp2",
+	"LavaForge1",
+	"LavaForge2",
 	"Maze",
 	"Maze1",
 	"Maze2",
@@ -98,7 +106,8 @@
 	"CaveRE",
 	"CaveRG",
 	"CaveRH",
-	"CaveRJ"
+	"CaveRJ",
+	"Kobold Mine"
 ],
 "structures": [
 	{

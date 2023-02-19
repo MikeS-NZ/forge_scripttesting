@@ -28,9 +28,12 @@
 	"Shell"
 ],
 "enemies": [
+	"Aether Channeler",
 	"Bird",
 	"Djinn",
 	"Elemental",
+	"Frost Titan",
+	"Horror",
 	"Merfolk",
 	"Merfolk Avatar",
 	"Merfolk Fighter",
@@ -44,11 +47,15 @@
 	"Rogue",
 	"Sea Monster",
 	"Tarkir Djinn",
-	"Doppelganger"
+	"Doppelganger",
+	"Pirate"
 ],
 "pointsOfInterest": [
 	"Blue Castle",
-	"Island Town",
+	"Island Town Generic",
+	"Island Town Identity",
+	"Island Town Tribal",
+	"Island Capital",
 	"NestU",
 	"MerfolkPool",
 	"MerfolkPool1",
@@ -73,7 +80,9 @@
 	"CaveU1",
 	"CaveU2",
 	"CaveU3",
-	"CaveU4"
+	"CaveU4",
+	"Kiora Island",
+	"Jacehold"
 ],
 "structures": [
 	{

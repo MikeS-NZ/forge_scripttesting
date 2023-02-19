@@ -1079,9 +1079,9 @@ public class FSkin {
             return str;
         }
         //format mana symbols to display as icons
-        pattern = "\\{([A-Z0-9]+)\\}|\\{([A-Z0-9]+)/([A-Z0-9]+)\\}|\\{([A-Z0-9]+)/([A-Z0-9]+)/([A-Z0-9]+)\\}"; //fancy pattern needed so "/" can be omitted from replacement
+        pattern = "\\{([A-Z0-9]+)\\}|\\{([A-Z0-9]+)/([A-Z0-9]+)\\}|(A-)|\\{([A-Z0-9]+)/([A-Z0-9]+)/([A-Z0-9]+)\\}"; //fancy pattern needed so "/" can be omitted from replacement
         try {
-            replacement = "<img src=\"" + new File(ForgeConstants.CACHE_SYMBOLS_DIR + "/$1$2$3$4$5$6.png").toURI().toURL().toString() + "\" width=" + SYMBOL_WIDTH + " height=" + SYMBOL_HEIGHT + ">";
+            replacement = "<img src=\"" + new File(ForgeConstants.CACHE_SYMBOLS_DIR + "/$1$2$3$4$5$6$7.png").toURI().toURL().toString() + "\" width=" + SYMBOL_WIDTH + " height=" + SYMBOL_HEIGHT + ">";
             str = str.replaceAll(pattern, replacement);
         } catch (final MalformedURLException e) {
             e.printStackTrace();
@@ -1452,6 +1452,16 @@ public class FSkin {
         addEncodingSymbol("P/U/R", FSkinProp.IMG_MANA_PHRYX_UR);
         addEncodingSymbol("P/W/B", FSkinProp.IMG_MANA_PHRYX_WB);
         addEncodingSymbol("P/W/U", FSkinProp.IMG_MANA_PHRYX_WU);
+        addEncodingSymbol("B/G/P", FSkinProp.IMG_MANA_PHRYX_BG);
+        addEncodingSymbol("B/R/P", FSkinProp.IMG_MANA_PHRYX_BR);
+        addEncodingSymbol("G/U/P", FSkinProp.IMG_MANA_PHRYX_GU);
+        addEncodingSymbol("G/W/P", FSkinProp.IMG_MANA_PHRYX_GW);
+        addEncodingSymbol("R/G/P", FSkinProp.IMG_MANA_PHRYX_RG);
+        addEncodingSymbol("R/W/P", FSkinProp.IMG_MANA_PHRYX_RW);
+        addEncodingSymbol("U/B/P", FSkinProp.IMG_MANA_PHRYX_UB);
+        addEncodingSymbol("U/R/P", FSkinProp.IMG_MANA_PHRYX_UR);
+        addEncodingSymbol("W/B/P", FSkinProp.IMG_MANA_PHRYX_WB);
+        addEncodingSymbol("W/U/P", FSkinProp.IMG_MANA_PHRYX_WU);
         for (int i = 0; i <= 20; i++) {
             addEncodingSymbol(String.valueOf(i), FSkinProp.valueOf("IMG_MANA_" + i));
         }
@@ -1463,7 +1473,9 @@ public class FSkin {
         addEncodingSymbol("S", FSkinProp.IMG_MANA_SNOW);
         addEncodingSymbol("T", FSkinProp.IMG_TAP);
         addEncodingSymbol("E", FSkinProp.IMG_ENERGY);
+        addEncodingSymbol("TK", FSkinProp.IMG_TICKET);
         addEncodingSymbol("EXPERIENCE", FSkinProp.IMG_EXPERIENCE);
+        addEncodingSymbol("A-", FSkinProp.IMG_ALCHEMY);
 
         // Set look and feel after skin loaded
         FView.SINGLETON_INSTANCE.setSplashProgessBarMessage("Setting look and feel...");

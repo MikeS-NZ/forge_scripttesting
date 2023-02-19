@@ -1,9 +1,6 @@
 package forge.game.ability.effects;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import forge.card.MagicColor;
 import forge.game.Game;
@@ -18,7 +15,6 @@ import forge.game.player.DelayedReveal;
 import forge.game.player.Player;
 import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbility;
-import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.ZoneType;
 import forge.util.CardTranslation;
@@ -172,26 +168,28 @@ public class DigEffect extends SpellAbilityEffect {
             }
         }
 
-        final TargetRestrictions tgt = sa.getTargetRestrictions();
-        final List<Player> tgtPlayers = getDefinedPlayersOrTargeted(sa);
-
         CardZoneTable table = new CardZoneTable();
         GameEntityCounterTable counterTable = new GameEntityCounterTable();
         boolean combatChanged = false;
         CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
         CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
 
-        for (final Player p : tgtPlayers) {
-            if (tgt != null && !p.canBeTargetedBy(sa)) {
+        for (final Player p : getDefinedPlayersOrTargeted(sa)) {
+            if (!p.isInGame()) {
                 continue;
             }
+
             final CardCollection top = new CardCollection();
             final CardCollection rest = new CardCollection();
-            final PlayerZone sourceZone = p.getZone(srcZone);
+            CardCollection all = new CardCollection(p.getCardsIn(srcZone));
 
-            int numToDig = Math.min(digNum, sourceZone.size());
+            if (sa.hasParam("FromBottom")) {
+                Collections.reverse(all);
+            }
+
+            int numToDig = Math.min(digNum, all.size());
             for (int i = 0; i < numToDig; i++) {
-                top.add(sourceZone.get(i));
+                top.add(all.get(i));
             }
 
             if (!top.isEmpty()) {
@@ -295,21 +293,17 @@ public class DigEffect extends SpellAbilityEffect {
                             chooser.getController().notifyOfValue(sa, null,
                                     Localizer.getInstance().getMessage("lblNoValidCards"));
                         }
-                        boolean opt = false;
-                        if (anyNumber) {
-                            opt = true;
-                        }
-                        while (!valid.isEmpty()) {
+                        while (!valid.isEmpty() && (anyNumber || movedCards.size() < destZone1ChangeNum)) {
                             Card chosen = chooser.getController().chooseSingleEntityForEffect(valid, delayedReveal, sa,
-                                    Localizer.getInstance().getMessage("lblChooseOne"), opt, p, null);
-                            if (chosen != null) {
-                                movedCards.add(chosen);
-                                valid.remove(chosen);
-                                totcmc = totcmc - chosen.getCMC();
-                                valid = CardLists.getValidCards(valid, "Card.cmcLE" + totcmc, cont, host, sa);
-                            } else { //if they can and did choose nothing, we're done here
+                                    Localizer.getInstance().getMessage("lblChooseOne"), anyNumber || optional, p, null);
+                            if (chosen == null) {
+                                //if they can and did choose nothing, we're done here
                                 break;
                             }
+                            movedCards.add(chosen);
+                            valid.remove(chosen);
+                            totcmc = totcmc - chosen.getCMC();
+                            valid = CardLists.getValidCards(valid, "Card.cmcLE" + totcmc, cont, host, sa);
                         }
                         chooser.getController().endTempShowCards();
                         if (!movedCards.isEmpty()) {
@@ -350,7 +344,7 @@ public class DigEffect extends SpellAbilityEffect {
                         }
                     } else {
                         String prompt;
-                        
+
                         if (sa.hasParam("PrimaryPrompt")) {
                             prompt = sa.getParam("PrimaryPrompt");
                         } else {
@@ -396,10 +390,6 @@ public class DigEffect extends SpellAbilityEffect {
                         movedCards = (CardCollection) GameActionUtil.orderCardsByTheirOwners(game, movedCards, destZone1, sa);
                     }
 
-                    Card effectHost = sa.getOriginalHost();
-                    if (effectHost == null) {
-                        effectHost = sa.getHostCard();
-                    }
                     for (Card c : movedCards) {
                         final ZoneType origin = c.getZone().getZoneType();
                         final PlayerZone zone = c.getOwner().getZone(destZone1);
@@ -421,6 +411,16 @@ public class DigEffect extends SpellAbilityEffect {
                                         sa.getParamOrDefault("WithCounterNum", "1"), sa);
                                 c.addEtbCounter(CounterType.getType(sa.getParam("WithCounter")), numCtr, player);
                             }
+                            if (sa.hasAdditionalAbility("AnimateSubAbility")) {
+                                // need LKI before Animate does apply
+                                moveParams.put(AbilityKey.CardLKI, CardUtil.getLKICopy(c));
+
+                                final SpellAbility animate = sa.getAdditionalAbility("AnimateSubAbility");
+                                host.addRemembered(c);
+                                AbilityUtils.resolve(animate);
+                                host.removeRemembered(c);
+                                animate.setSVar("unanimateTimestamp", String.valueOf(game.getTimestamp()));
+                            }
                             c = game.getAction().moveTo(zone, c, sa, moveParams);
                             if (destZone1.equals(ZoneType.Battlefield)) {
                                 if (addToCombat(c, c.getController(), sa, "Attacking", "Blocking")) {
@@ -430,9 +430,7 @@ public class DigEffect extends SpellAbilityEffect {
                                 if (sa.hasParam("ExileWithCounter")) {
                                     c.addCounter(CounterType.getType(sa.getParam("ExileWithCounter")), 1, player, counterTable);
                                 }
-                                effectHost.addExiledCard(c);
-                                c.setExiledWith(effectHost);
-                                c.setExiledBy(effectHost.getController());
+                                handleExiledWith(c, sa);
                             }
                         }
                         if (!origin.equals(c.getZone().getZoneType())) {
@@ -503,9 +501,7 @@ public class DigEffect extends SpellAbilityEffect {
                                 if (sa.hasParam("ExileWithCounter")) {
                                     c.addCounter(CounterType.getType(sa.getParam("ExileWithCounter")), 1, player, counterTable);
                                 }
-                                effectHost.addExiledCard(c);
-                                c.setExiledWith(effectHost);
-                                c.setExiledBy(effectHost.getController());
+                                handleExiledWith(c, sa);
                                 if (remZone2) {
                                     host.addRemembered(c);
                                 }

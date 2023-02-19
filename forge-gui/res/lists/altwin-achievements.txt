@@ -1,5 +1,6 @@
 Angel of Destiny|Outlive Long and Prosper|Life eternal thanks to one weird trick!
 Approach of the Second Sun|The God-Pharaoh's Return|I'm back! Did you miss me?
+Archfiend of the Dross|The Oil Clock|Too bad! You're out of fuel!
 Azor's Elocutors|The Filibuster|Talk might be cheap, but it can buy you victory!
 Barren Glory|The Clean Slate|When you have nothing, you can lose nothing... so you can win everything!
 Battle of Wits|The Great Library|So many answers, so little time to look through them...
@@ -28,6 +29,7 @@ Mirrodin Besieged|The War's End|Spoiler alert: Phyrexia won.
 Mortal Combat|The Boneyard|So peaceful...
 Near-Death Experience|The Edge|Phew... I thought I was going to die!
 Phage the Untouchable|The Untouchable|None are immune to her deadly touch!
+Ramses, Assassin Lord|The Precise Strike|Break one gear and the whole machine stops. You are that gear.
 Revel in Riches|The Dead Man's Chest|Yo-ho-ho, and a bottle of rum!
 Simic Ascendancy|The Ascension|As you can see, we are going through a period of unprecedented growth.
 Sinner's Judgment|The Final Judgment|Your appeal has been denied.

@@ -79,6 +79,11 @@ public class CardFaceSymbols {
         MANA_IMAGES.put("PU", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_U));
         MANA_IMAGES.put("PB", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_B));
         MANA_IMAGES.put("PG", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_G));
+        MANA_IMAGES.put("WP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_W));
+        MANA_IMAGES.put("RP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_R));
+        MANA_IMAGES.put("UP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_U));
+        MANA_IMAGES.put("BP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_B));
+        MANA_IMAGES.put("GP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_G));
         MANA_IMAGES.put("PBG", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_BG));
         MANA_IMAGES.put("PBR", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_BR));
         MANA_IMAGES.put("PGU", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_GU));
@@ -89,6 +94,16 @@ public class CardFaceSymbols {
         MANA_IMAGES.put("PUR", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_UR));
         MANA_IMAGES.put("PWB", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_WB));
         MANA_IMAGES.put("PWU", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_WU));
+        MANA_IMAGES.put("BGP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_BG));
+        MANA_IMAGES.put("BRP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_BR));
+        MANA_IMAGES.put("GUP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_GU));
+        MANA_IMAGES.put("GWP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_GW));
+        MANA_IMAGES.put("RGP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_RG));
+        MANA_IMAGES.put("RWP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_RW));
+        MANA_IMAGES.put("UBP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_UB));
+        MANA_IMAGES.put("URP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_UR));
+        MANA_IMAGES.put("WBP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_WB));
+        MANA_IMAGES.put("WUP", FSkin.getImage(FSkinProp.IMG_MANA_PHRYX_WU));
         MANA_IMAGES.put("2W", FSkin.getImage(FSkinProp.IMG_MANA_2W));
         MANA_IMAGES.put("2U", FSkin.getImage(FSkinProp.IMG_MANA_2U));
         MANA_IMAGES.put("2R", FSkin.getImage(FSkinProp.IMG_MANA_2R));
@@ -99,6 +114,7 @@ public class CardFaceSymbols {
         MANA_IMAGES.put("T", FSkin.getImage(FSkinProp.IMG_TAP));
         MANA_IMAGES.put("Q", FSkin.getImage(FSkinProp.IMG_UNTAP));
         MANA_IMAGES.put("E", FSkin.getImage(FSkinProp.IMG_ENERGY, 40, 40));
+        MANA_IMAGES.put("TK", FSkin.getImage(FSkinProp.IMG_TICKET, 40, 40));
         MANA_IMAGES.put("EXPERIENCE", FSkin.getImage(FSkinProp.IMG_EXPERIENCE, 40, 30));
         MANA_IMAGES.put("CHAOS", FSkin.getImage(FSkinProp.IMG_CHAOS));
         MANA_IMAGES.put("slash", FSkin.getImage(FSkinProp.IMG_SLASH));
@@ -136,6 +152,7 @@ public class CardFaceSymbols {
 
         //ability icons
         MANA_IMAGES.put("commander", FSkin.getImage(FSkinProp.IMG_ABILITY_COMMANDER));
+        MANA_IMAGES.put("toxic", FSkin.getImage(FSkinProp.IMG_ABILITY_TOXIC));
         MANA_IMAGES.put("deathtouch", FSkin.getImage(FSkinProp.IMG_ABILITY_DEATHTOUCH));
         MANA_IMAGES.put("defender", FSkin.getImage(FSkinProp.IMG_ABILITY_DEFENDER));
         MANA_IMAGES.put("doublestrike", FSkin.getImage(FSkinProp.IMG_ABILITY_DOUBLE_STRIKE));

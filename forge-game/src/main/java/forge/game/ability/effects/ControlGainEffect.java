@@ -18,6 +18,7 @@ import forge.game.event.GameEventCombatChanged;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+import forge.util.CardTranslation;
 import forge.util.Localizer;
 
 public class ControlGainEffect extends SpellAbilityEffect {
@@ -83,8 +84,7 @@ public class ControlGainEffect extends SpellAbilityEffect {
         return sb.toString();
     }
 
-    private static void doLoseControl(final Card c, final Card host,
-            final boolean tapOnLose, final long tStamp) {
+    private static void doLoseControl(final Card c, final Card host, final long tStamp) {
         if (null == c || c.hasKeyword("Other players can't gain control of CARDNAME.")) {
             return;
         }
@@ -93,10 +93,6 @@ public class ControlGainEffect extends SpellAbilityEffect {
             c.removeTempController(tStamp);
 
             game.getAction().controllerChangeZoneCorrection(c);
-
-            if (tapOnLose) {
-                c.tap(false);
-            }
         }
         host.removeGainControlTargets(c);
     }
@@ -107,7 +103,6 @@ public class ControlGainEffect extends SpellAbilityEffect {
         final Player activator = sa.getActivatingPlayer();
 
         final boolean bUntap = sa.hasParam("Untap");
-        final boolean bTapOnLose = sa.hasParam("TapOnLose");
         final boolean remember = sa.hasParam("RememberControlled");
         final boolean forget = sa.hasParam("ForgetControlled");
         final List<String> keywords = sa.hasParam("AddKWs") ? Arrays.asList(sa.getParam("AddKWs").split(" & ")) : null;
@@ -159,6 +154,15 @@ public class ControlGainEffect extends SpellAbilityEffect {
             if (!tgtC.isInPlay() || !tgtC.canBeControlledBy(newController)) {
                 continue;
             }
+            if (tgtC.isPhasedOut()) {
+                continue;
+            }
+
+            if (sa.hasParam("Optional") && !activator.getController().confirmAction(sa, null,
+                    Localizer.getInstance().getMessage("lblGainControlConfirm", newController,
+                            CardTranslation.getTranslatedName(tgtC.getName())), null)) {
+                continue;
+            }
 
             if (!tgtC.equals(source) && !source.getGainControlTargets().contains(tgtC)) {
                 source.addGainControlTarget(tgtC);
@@ -200,7 +204,7 @@ public class ControlGainEffect extends SpellAbilityEffect {
             }
 
             if (lose != null) {
-                final GameCommand loseControl = getLoseControlCommand(tgtC, tStamp, bTapOnLose, source);
+                final GameCommand loseControl = getLoseControlCommand(tgtC, tStamp, source);
                 if (lose.contains("LeavesPlay") && source != tgtC) { // Only return control if host and target are different cards
                     source.addLeavesPlayCommand(loseControl);
                 }
@@ -270,14 +274,13 @@ public class ControlGainEffect extends SpellAbilityEffect {
      *            a {@link forge.game.player.Player} object.
      * @return a {@link forge.GameCommand} object.
      */
-    private static GameCommand getLoseControlCommand(final Card c,
-            final long tStamp, final boolean bTapOnLose, final Card hostCard) {
+    private static GameCommand getLoseControlCommand(final Card c, final long tStamp, final Card hostCard) {
         final GameCommand loseControl = new GameCommand() {
             private static final long serialVersionUID = 878543373519872418L;
 
             @Override
-            public void run() { 
-                doLoseControl(c, hostCard, bTapOnLose, tStamp);
+            public void run() {
+                doLoseControl(c, hostCard, tStamp);
                 c.removeChangedSVars(tStamp, 0);
             }
         };

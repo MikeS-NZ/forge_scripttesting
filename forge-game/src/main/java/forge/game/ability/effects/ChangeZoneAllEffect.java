@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 
 import forge.game.Game;
 import forge.game.GameActionUtil;
@@ -69,7 +68,6 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
                 if (origin.contains(ZoneType.Library) && sa.hasParam("Search") && !sa.getActivatingPlayer().canSearchLibraryWith(sa, p)) {
                     cards.removeAll(p.getCardsIn(ZoneType.Library));
                 }
-
             }
             if (origin.contains(ZoneType.Library) && sa.hasParam("Search")) {
                 // Search library using changezoneall effect need a param "Search"
@@ -96,8 +94,7 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
             if (!libCards.isEmpty()) {
                 sa.getActivatingPlayer().getController().reveal(libCards, ZoneType.Library, libCards.get(0).getOwner());
             }
-            final Map<AbilityKey, Object> runParams = AbilityKey.newMap();
-            runParams.put(AbilityKey.Player, sa.getActivatingPlayer());
+            final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(sa.getActivatingPlayer());
             runParams.put(AbilityKey.Target, tgtPlayers);
             game.getTriggerHandler().runTrigger(TriggerType.SearchedLibrary, runParams, false);
         }
@@ -164,7 +161,7 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
                 }
             }
 
-            Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
+            Map<AbilityKey, Object> moveParams = AbilityKey.newMap();
             moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
             moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
 
@@ -173,9 +170,11 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
                     // need LKI before Animate does apply
                     moveParams.put(AbilityKey.CardLKI, CardUtil.getLKICopy(c));
 
+                    final SpellAbility animate = sa.getAdditionalAbility("AnimateSubAbility");
                     source.addRemembered(c);
-                    AbilityUtils.resolve(sa.getAdditionalAbility("AnimateSubAbility"));
+                    AbilityUtils.resolve(animate);
                     source.removeRemembered(c);
+                    animate.setSVar("unanimateTimestamp", String.valueOf(game.getTimestamp()));
                 }
                 if (sa.hasParam("Tapped")) {
                     c.setTapped(true);
@@ -188,13 +187,7 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
             } else {
                 movedCard = game.getAction().moveTo(destination, c, libraryPos, sa, moveParams);
                 if (destination == ZoneType.Exile && !c.isToken()) {
-                    Card host = sa.getOriginalHost();
-                    if (host == null) {
-                        host = sa.getHostCard();
-                    }
-                    host.addExiledCard(movedCard);
-                    movedCard.setExiledWith(host);
-                    movedCard.setExiledBy(host.getController());
+                    handleExiledWith(movedCard, sa);
                 }
                 if (sa.hasParam("ExileFaceDown")) {
                     movedCard.turnFaceDown(true);

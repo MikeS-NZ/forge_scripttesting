@@ -1,5 +1,6 @@
 package forge.screens.match.views;
 
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
@@ -10,6 +11,7 @@ import forge.Graphics;
 import forge.animation.ForgeAnimation;
 import forge.assets.FImage;
 import forge.assets.FSkin;
+import forge.assets.FSkinColor;
 import forge.assets.FSkinFont;
 import forge.game.card.CounterEnumType;
 import forge.game.player.PlayerView;
@@ -42,7 +44,7 @@ public class VAvatar extends FDisplayObject {
         avatarAnimation = new AvatarAnimation();
     }
     private class AvatarAnimation extends ForgeAnimation {
-        private static final float DURATION = 0.6f;
+        private static final float DURATION = 1.2f;
         private float progress = 0;
         Texture splatter = FSkin.splatter;
 
@@ -58,7 +60,7 @@ public class VAvatar extends FDisplayObject {
             float oldAlpha = g.getfloatAlphaComposite();
             float fade = 1-(percentage*1);
             if (amount > 0) {
-                g.drawAvatarImage(image, x, y, w, h, player.getHasLost());
+                g.drawAvatarImage(image, x, y, w, h, player.getHasLost(), 0);
                 drawPlayerIndicator(g, w, h, percentage);
                 g.setAlphaComposite(fade);
                 g.drawRect(w / 12f, Color.WHITE, 0, 0, w, h);
@@ -67,10 +69,10 @@ public class VAvatar extends FDisplayObject {
             } else if (amount < 0) {
                 if (splatter == null) {
                     g.setColorRGBA(1, percentage, percentage, oldAlpha);
-                    g.drawAvatarImage(image, x, y, w, h, player.getHasLost());
+                    g.drawAvatarImage(image, x, y, w, h, player.getHasLost(), 0);
                     g.resetColorRGBA(oldAlpha);
                 } else {
-                    g.drawAvatarImage(image, x, y, w, h, player.getHasLost());
+                    g.drawAvatarImage(image, x, y, w, h, player.getHasLost(), 0);
                     g.setAlphaComposite(fade);
                     g.drawImage(splatter, x-mod/2, y-mod/2, w+mod, h+mod);
                     g.setAlphaComposite(oldAlpha);
@@ -96,12 +98,8 @@ public class VAvatar extends FDisplayObject {
     }
     @Override
     public boolean tap(float x, float y, int count) {
-        ThreadUtil.invokeInGameThread(new Runnable() { //must invoke in game thread in case a dialog needs to be shown
-            @Override
-            public void run() {
-                MatchController.instance.getGameController().selectPlayer(player, null);
-            }
-        });
+        //must invoke in game thread in case a dialog needs to be shown
+        ThreadUtil.invokeInGameThread(() -> MatchController.instance.getGameController().selectPlayer(player, null));
         return true;
     }
 
@@ -122,11 +120,11 @@ public class VAvatar extends FDisplayObject {
                 avatarAnimation.start();
                 avatarAnimation.drawAvatar(g, image, 0, 0, w, h);
             } else {
-                g.drawAvatarImage(image, 0, 0, w, h, player.getHasLost());
+                g.drawAvatarImage(image, 0, 0, w, h, player.getHasLost(), 0);
                 drawPlayerIndicator(g, w, h, 1);
             }
         } else {
-            g.drawAvatarImage(image, 0, 0, w, h, player.getHasLost());
+            g.drawAvatarImage(image, 0, 0, w, h, player.getHasLost(), 0);
         }
 
         if (Forge.altPlayerLayout && !Forge.altZoneTabs && Forge.isLandscapeMode())
@@ -156,19 +154,37 @@ public class VAvatar extends FDisplayObject {
             float alpha = displayPriority ? 1f : 0.8f;
             if (alphaModifier < 1)
                 alpha = alphaModifier;
-            g.setAlphaComposite(alpha);
-            g.drawRect(w / 16f, Color.CYAN, 0, 0, w, h);
-            g.setAlphaComposite(oldAlpha);
+            g.drawRect(w / 16f, FSkinColor.getStandardColor(Color.CYAN).alphaColor(alpha), 0, 0, w, h);
         }
         //priority indicator
         if (displayPriority && player.getHasPriority() && alphaModifier == 1) {
-            g.setAlphaComposite(0.6f);
-            g.drawRect(w / 16f, Color.LIME, 0, 0, w, h);
-            g.setAlphaComposite(oldAlpha);
+            g.drawRect(w / 16f, FSkinColor.getStandardColor(Color.LIME).alphaColor(0.6f), 0, 0, w, h);
         }
         //highlighted
         if (MatchController.instance.isHighlighted(player)) {
             g.drawRect(w / 16f, Color.MAGENTA, 0, 0, w, h);
         }
+        //selector
+        if (Forge.hasGamepad()) {
+            if (MatchController.getView().selectedPlayerPanel() != null) {
+                if (MatchController.getView().selectedPlayerPanel().getPlayer() == player) {
+                    g.drawRect(w / 16f, Color.ORANGE, 0, 0, w, h);
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean keyDown(int keyCode) {
+        if (keyCode == Input.Keys.PAGE_DOWN) { // left analog down to select current selected panel
+            //must invoke in game thread in case a dialog needs to be shown
+            if (MatchController.getView().selectedPlayerPanel() != null) {
+                PlayerView selected = MatchController.getView().selectedPlayerPanel().getPlayer();
+                if (selected != null)
+                    ThreadUtil.invokeInGameThread(() -> MatchController.instance.getGameController().selectPlayer(selected, null));
+            }
+            return true;
+        }
+        return super.keyDown(keyCode);
     }
 }

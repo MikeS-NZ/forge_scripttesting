@@ -246,6 +246,13 @@ public class CardView extends GameEntityView {
         set(TrackableProperty.IsEmblem, c.isEmblem());
     }
 
+    public boolean isBoon() {
+        return get(TrackableProperty.IsBoon);
+    }
+    public void updateBoon(Card c) {
+        set(TrackableProperty.IsBoon, c.isBoon());
+    }
+
     public boolean isTokenCard() { return get(TrackableProperty.TokenCard); }
     void updateTokenCard(Card c) { set(TrackableProperty.TokenCard, c.isTokenCard()); }
 
@@ -449,7 +456,7 @@ public class CardView extends GameEntityView {
         return get(TrackableProperty.Remembered);
     }
     void updateRemembered(Card c) {
-        if (c.getRemembered() == null || Iterables.size(c.getRemembered()) == 0) {
+        if (c.getRemembered() == null || Iterables.isEmpty(c.getRemembered())) {
             set(TrackableProperty.Remembered, null);
             return;
         }
@@ -470,6 +477,13 @@ public class CardView extends GameEntityView {
             }
         }
         set(TrackableProperty.Remembered, sb.toString());
+    }
+
+    public String getSector() {
+       return get(TrackableProperty.Sector);
+    }
+    void updateSector(Card c) {
+        set(TrackableProperty.Sector, c.getSector());
     }
 
     public String getNamedCard() {
@@ -583,12 +597,12 @@ public class CardView extends GameEntityView {
         return Iterables.any(viewers, new Predicate<PlayerView>() {
             @Override
             public final boolean apply(final PlayerView input) {
-                return canFaceDownBeShownTo(input, false);
+                return canFaceDownBeShownTo(input);
             }
         });
     }
 
-    public boolean canFaceDownBeShownTo(final PlayerView viewer, boolean skip) {
+    public boolean canFaceDownBeShownTo(final PlayerView viewer) {
         if (!isFaceDown()) {
             return true;
         }
@@ -597,12 +611,10 @@ public class CardView extends GameEntityView {
         if (mayPlayerLook(viewer)) {
             return true;
         }
-        if (!skip) {
-            //if viewer is controlled by another player, also check if face can be shown to that player
-            final PlayerView mindSlaveMaster = viewer.getMindSlaveMaster();
-            if (mindSlaveMaster != null) {
-                return canFaceDownBeShownTo(mindSlaveMaster, true);
-            }
+        //if viewer is controlled by another player, also check if face can be shown to that player
+        final PlayerView mindSlaveMaster = getController().getMindSlaveMaster();
+        if (mindSlaveMaster != null && mindSlaveMaster != getController() && mindSlaveMaster == viewer) {
+            return canFaceDownBeShownTo(getController());
         }
 
         return isInZone(EnumSet.of(ZoneType.Battlefield, ZoneType.Stack, ZoneType.Sideboard)) && getController().equals(viewer);
@@ -1191,6 +1203,12 @@ public class CardView extends GameEntityView {
             }
             return ImageKeys.getTokenKey(ImageKeys.HIDDEN_CARD);
         }
+        /*
+        * Use this for revealing purposes only
+        * */
+        public String getTrackableImageKey() {
+            return get(TrackableProperty.ImageKey);
+        }
         void updateImageKey(Card c) {
             set(TrackableProperty.ImageKey, c.getImageKey());
         }
@@ -1255,7 +1273,7 @@ public class CardView extends GameEntityView {
                 num = c.getNetPower();
             }
             if (c.getCurrentState().getView() != this && c.getAlternateState() != null) {
-                num -= c.getBasePower() + c.getAlternateState().getBasePower();
+                num = num - c.getBasePower() + c.getAlternateState().getBasePower();
             }
             set(TrackableProperty.Power, num);
         }
@@ -1280,7 +1298,7 @@ public class CardView extends GameEntityView {
                 num = c.getNetToughness();
             }
             if (c.getCurrentState().getView() != this && c.getAlternateState() != null) {
-                num -= c.getBaseToughness() + c.getAlternateState().getBaseToughness();
+                num = num - c.getBaseToughness() + c.getAlternateState().getBaseToughness();
             }
             set(TrackableProperty.Toughness, num);
         }
@@ -1360,10 +1378,12 @@ public class CardView extends GameEntityView {
         public String getProtectionKey() { return get(TrackableProperty.ProtectionKey); }
         public String getHexproofKey() { return get(TrackableProperty.HexproofKey); }
         public boolean hasDeathtouch() { return get(TrackableProperty.HasDeathtouch); }
+        public boolean hasToxic() { return get(TrackableProperty.HasToxic); }
         public boolean hasDevoid() { return get(TrackableProperty.HasDevoid); }
         public boolean hasDefender() { return get(TrackableProperty.HasDefender); }
         public boolean hasDivideDamage() { return get(TrackableProperty.HasDivideDamage); }
         public boolean hasDoubleStrike() { return get(TrackableProperty.HasDoubleStrike); }
+        public boolean hasDoubleTeam() { return get(TrackableProperty.HasDoubleTeam); }
         public boolean hasFirstStrike() { return get(TrackableProperty.HasFirstStrike); }
         public boolean hasFlying() { return get(TrackableProperty.HasFlying); }
         public boolean hasFear() { return get(TrackableProperty.HasFear); }
@@ -1432,6 +1452,7 @@ public class CardView extends GameEntityView {
         void updateKeywords(Card c, CardState state) {
             c.updateKeywordsCache(state);
             set(TrackableProperty.HasDeathtouch, c.hasKeyword(Keyword.DEATHTOUCH, state));
+            set(TrackableProperty.HasToxic, c.hasKeyword(Keyword.TOXIC, state));
             set(TrackableProperty.HasDevoid, c.hasKeyword(Keyword.DEVOID, state));
             set(TrackableProperty.HasDefender, c.hasKeyword(Keyword.DEFENDER, state));
             set(TrackableProperty.HasDivideDamage, c.hasKeyword("You may assign CARDNAME's combat damage divided as " +

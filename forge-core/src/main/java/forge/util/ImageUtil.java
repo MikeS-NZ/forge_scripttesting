@@ -13,21 +13,53 @@ public class ImageUtil {
         return (float)Math.round(actualSize) * (float)Math.pow(2, (double)Math.round(Math.log(baseSize / actualSize) / Math.log(2)));
     }
 
-    public static PaperCard getPaperCardFromImageKey(String key) {
-        if (key == null || key.length() < 2) {
+    public static PaperCard getPaperCardFromImageKey(final String imageKey) {
+        String key;
+        if (imageKey == null || imageKey.length() < 2) {
             return null;
         }
+        if (imageKey.startsWith(ImageKeys.CARD_PREFIX))
+            key = imageKey.substring(ImageKeys.CARD_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.TOKEN_PREFIX))
+            key = imageKey.substring(ImageKeys.TOKEN_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.ICON_PREFIX))
+            key = imageKey.substring(ImageKeys.ICON_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.BOOSTER_PREFIX))
+            key = imageKey.substring(ImageKeys.BOOSTER_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.FATPACK_PREFIX))
+            key = imageKey.substring(ImageKeys.FATPACK_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.BOOSTERBOX_PREFIX))
+            key = imageKey.substring(ImageKeys.BOOSTERBOX_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.PRECON_PREFIX))
+            key = imageKey.substring(ImageKeys.PRECON_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.TOURNAMENTPACK_PREFIX))
+            key = imageKey.substring(ImageKeys.TOURNAMENTPACK_PREFIX.length());
+        else if (imageKey.startsWith(ImageKeys.ADVENTURECARD_PREFIX))
+            key = imageKey.substring(ImageKeys.ADVENTURECARD_PREFIX.length());
+        else if (imageKey.contains(".full")) {//no prefix found, construct a valid key if imageKey is art imagekey.
+            key = transformKey(imageKey);
+        } else //try anyway...
+            key = imageKey;
 
-        key = key.substring(2);
         PaperCard cp = StaticData.instance().getCommonCards().getCard(key);
         if (cp == null) {
             cp = StaticData.instance().getVariantCards().getCard(key);
         }
         return cp;
     }
+    public static String transformKey(String imageKey) {
+        String key;
+        String edition= imageKey.substring(0, imageKey.indexOf("/"));
+        String artIndex = imageKey.substring(imageKey.indexOf("/")+1, imageKey.indexOf(".")).replaceAll("[^0-9]", "");
+        String name = artIndex.isEmpty() ? imageKey.substring(imageKey.indexOf("/")+1, imageKey.indexOf(".")) : imageKey.substring(imageKey.indexOf("/")+1, imageKey.indexOf(artIndex));
+        key = name + "|" + edition;
+        if (!artIndex.isEmpty())
+            key += "|" + artIndex;
+        return key;
+    }
 
-    public static String getImageRelativePath(PaperCard cp, boolean backFace, boolean includeSet, boolean isDownloadUrl) {
-        final String nameToUse = cp == null ? null : getNameToUse(cp, backFace);
+    public static String getImageRelativePath(PaperCard cp, String face, boolean includeSet, boolean isDownloadUrl) {
+        final String nameToUse = cp == null ? null : getNameToUse(cp, face);
         if (nameToUse == null) {
             return null;
         }
@@ -80,36 +112,55 @@ public class ImageUtil {
         }
     }
 
-    public static String getNameToUse(PaperCard cp, boolean backFace) {
+    public static String getNameToUse(PaperCard cp, String face) {
         final CardRules card = cp.getRules();
-        if (backFace) {
+        if (face.equals("back")) {
             if (cp.hasBackFace())
                 if (card.getOtherPart() != null) {
                     return card.getOtherPart().getName();
                 } else if (!card.getMeldWith().isEmpty()) {
-                    final CardDb db =  StaticData.instance().getCommonCards();
+                    final CardDb db = StaticData.instance().getCommonCards();
                     return db.getRules(card.getMeldWith()).getOtherPart().getName();
                 } else {
                     return null;
                 }
             else
                 return null;
-        } else if(CardSplitType.Split == cp.getRules().getSplitType()) {
+        } else if (face.equals("white")) {
+            if (card.getWSpecialize() != null) {
+                return card.getWSpecialize().getName();
+            }
+        } else if (face.equals("blue")) {
+            if (card.getUSpecialize() != null) {
+                return card.getUSpecialize().getName();
+            }
+        } else if (face.equals("black")) {
+            if (card.getBSpecialize() != null) {
+                return card.getBSpecialize().getName();
+            }
+        } else if (face.equals("red")) {
+            if (card.getRSpecialize() != null) {
+                return card.getRSpecialize().getName();
+            }
+        } else if (face.equals("green")) {
+            if (card.getGSpecialize() != null) {
+                return card.getGSpecialize().getName();
+            }
+        } else if (CardSplitType.Split == cp.getRules().getSplitType()) {
             return card.getMainPart().getName() + card.getOtherPart().getName();
-        } else {
-            return cp.getName();
         }
+        return cp.getName();
     }
 
-    public static String getImageKey(PaperCard cp, boolean backFace, boolean includeSet) {
-        return getImageRelativePath(cp, backFace, includeSet, false);
+    public static String getImageKey(PaperCard cp, String face, boolean includeSet) {
+        return getImageRelativePath(cp, face, includeSet, false);
     }
 
-    public static String getDownloadUrl(PaperCard cp, boolean backFace) {
-        return getImageRelativePath(cp, backFace, true, true);
+    public static String getDownloadUrl(PaperCard cp, String face) {
+        return getImageRelativePath(cp, face, true, true);
     }
 
-    public static String getScryfallDownloadUrl(PaperCard cp, boolean backFace, String setCode, String langCode, boolean useArtCrop){
+    public static String getScryfallDownloadUrl(PaperCard cp, String face, String setCode, String langCode, boolean useArtCrop){
         String editionCode;
         if ((setCode != null) && (setCode.length() > 0))
             editionCode = setCode;
@@ -121,7 +172,7 @@ public class ImageUtil {
         String versionParam = useArtCrop ? "art_crop" : "normal";
         String faceParam = "";
         if (cp.getRules().getOtherPart() != null) {
-            faceParam = (backFace ? "&face=back" : "&face=front");
+            faceParam = (face.equals("back") ? "&face=back" : "&face=front");
         }
         return String.format("%s/%s/%s?format=image&version=%s%s", editionCode, cardCollectorNumber,
                 langCode, versionParam, faceParam);

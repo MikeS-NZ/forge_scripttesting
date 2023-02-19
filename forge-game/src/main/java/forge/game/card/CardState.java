@@ -32,7 +32,6 @@ import forge.card.CardType;
 import forge.card.CardTypeView;
 import forge.card.MagicColor;
 import forge.card.mana.ManaCost;
-import forge.card.mana.ManaCostParser;
 import forge.game.CardTraitBase;
 import forge.game.ForgeScript;
 import forge.game.GameObject;
@@ -119,6 +118,10 @@ public class CardState extends GameObject implements IHasSVars {
         return name + " (" + view.getState() + ")";
     }
 
+    public CardTypeView getTypeWithChanges() {
+        return getType().getTypeWithChanges(card.getChangedCardTypes());
+    }
+
     public final CardTypeView getType() {
         return type;
     }
@@ -170,19 +173,9 @@ public class CardState extends GameObject implements IHasSVars {
     public final byte getColor() {
         return color;
     }
-    public final void addColor(final String color) {
-        final ManaCostParser parser = new ManaCostParser(color);
-        final ManaCost cost = new ManaCost(parser);
-        addColor(cost.getColorProfile());
-    }
     public final void addColor(final byte color) {
         this.color |= color;
         view.updateColors(card);
-    }
-    public final void setColor(final String color) {
-        final ManaCostParser parser = new ManaCostParser(color);
-        final ManaCost cost = new ManaCost(parser);
-        setColor(cost.getColorProfile());
     }
     public final void setColor(final byte color) {
         this.color = color;
@@ -477,12 +470,7 @@ public class CardState extends GameObject implements IHasSVars {
         return getReplacementEffects().contains(re);
     }
     public final boolean hasReplacementEffect(final int id) {
-        for (final ReplacementEffect r : getReplacementEffects()) {
-            if (id == r.getId()) {
-                return true;
-            }
-        }
-        return false;
+        return getReplacementEffect(id) != null;
     }
 
     public final ReplacementEffect getReplacementEffect(final int id) {
@@ -668,11 +656,6 @@ public class CardState extends GameObject implements IHasSVars {
     public String getSetCode() {
         return setCode;
     }
-
-    public CardTypeView getTypeWithChanges() {
-        return getType().getTypeWithChanges(card.getChangedCardTypes());
-    }
-
     public void setSetCode(String setCode0) {
         setCode = setCode0;
         view.updateSetCode(this);

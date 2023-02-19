@@ -55,18 +55,6 @@ public class TriggerBecomesTarget extends Trigger {
      * @param runParams*/
     @Override
     public final boolean performTest(final Map<AbilityKey, Object> runParams) {
-        if (hasParam("SourceType")) {
-            final SpellAbility sa = (SpellAbility) runParams.get(AbilityKey.SourceSA);
-            if (getParam("SourceType").equalsIgnoreCase("spell")) {
-                if (!sa.isSpell()) {
-                    return false;
-                }
-            } else if (getParam("SourceType").equalsIgnoreCase("ability")) {
-                if (!sa.isAbility()) {
-                    return false;
-                }
-            }
-        }
         if (hasParam("ValidSource")) {
             SpellAbility source = (SpellAbility) runParams.get(AbilityKey.SourceSA);
             if (source == null) {
@@ -97,6 +85,7 @@ public class TriggerBecomesTarget extends Trigger {
     public final void setTriggeringObjects(final SpellAbility sa, Map<AbilityKey, Object> runParams) {
         sa.setTriggeringObject(AbilityKey.Source, ((SpellAbility) runParams.get(AbilityKey.SourceSA)).getHostCard());
         sa.setTriggeringObjectsFrom(runParams, AbilityKey.SourceSA, AbilityKey.Target);
+        sa.setTriggeringObject(AbilityKey.StackInstance, sa.getHostCard().getGame().getStack().getInstanceFromSpellAbility((SpellAbility) runParams.get(AbilityKey.SourceSA)));
     }
 
     @Override

@@ -5,7 +5,7 @@
   "elements": [
     {
       "type": "Image",
-      "name": "lastScreen",
+      "image": "ui/spellsmith.png",
       "width": 480,
       "height": 270
     },
@@ -61,8 +61,10 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "done",
-      "text": "Done",
+      "text": "tr(lblBack)",
+      "binding": "Back",
       "x": 400,
       "y": 240,
       "width": 70,
@@ -70,8 +72,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BBlack",
-      "text": "Black",
+      "text": "[+b]",
       "x": 15,
       "y": 120,
       "width": 45,
@@ -79,8 +82,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BBlue",
-      "text": "Blue",
+      "text": "[+u]",
       "x": 65,
       "y": 120,
       "width": 45,
@@ -88,8 +92,9 @@
     },
     {
       "type": "TextButton",
-      "name": "BGreen",
-      "text": "Green",
+      "selectable": true,
+      "name": "BGreen",  
+      "text": "[+g]",
       "x": 115,
       "y": 120,
       "width": 45,
@@ -97,8 +102,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BRed",
-      "text": "Red",
+      "text": "[+r]",
       "x": 165,
       "y": 120,
       "width": 45,
@@ -106,8 +112,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BWhite",
-      "text": "White",
+      "text": "[+w]",
       "x": 215,
       "y": 120,
       "width": 45,
@@ -115,8 +122,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BColorless",
-      "text": "Colorless",
+      "text": "[+c]",
       "x": 265,
       "y": 120,
       "width": 45,
@@ -124,17 +132,47 @@
     },
     {
       "type": "Label",
-      "name": "gold",
-      "text": "$",
-      "x": 0,
-      "y": 0,
-      "width": 120,
+      "name": "playerGold", 
+	  "style":"background",
+      "x": 5,
+      "y": 5,
+      "width": 80,
       "height": 20
     },
     {
       "type": "TextButton",
-      "name": "pull",
-      "text": "Pull",
+      "selectable": true,
+      "name": "pullUsingGold",
+      "binding": "Status",
+      "text": "tr(lblDraw) [+gold]",  
+      "x": 70,
+      "y": 5,
+      "width": 90,
+      "height": 20
+    },
+	{
+      "type": "Label",
+      "name": "playerShards", 
+	  "style":"background",
+      "x": 280,
+      "y": 5,
+      "width": 80,
+      "height": 20
+    },
+	{
+      "type": "TextButton",
+      "selectable": true,
+      "name": "pullUsingShards",
+      "binding": "Equip",
+      "text": "tr(lblDraw) [+shards]",  
+      "x": 345,
+      "y": 5,
+      "width": 90,
+      "height": 20
+    },
+	{
+      "type": "Label",
+      "name": "poolSize", 
       "x": 360,
       "y": 180,
       "width": 90,
@@ -143,7 +181,7 @@
     {
       "type": "Label",
       "name": "colorLabel",
-      "text": "Colors",
+      "text": "tr(lblColors)", 
       "x": 10,
       "y": 90,
       "width": 100,
@@ -152,7 +190,7 @@
     {
       "type": "Label",
       "name": "vnXYKZJw_P5wMnHa1tH7-3",
-      "text": "Plane",
+      "text": "tr(lblPlane)", 
       "x": 10,
       "y": 30,
       "width": 100,
@@ -160,6 +198,7 @@
     },
     {
       "type": "SelectBox",
+      "selectable": true,
       "name": "BSelectPlane",
       "text": "Select Plane",
       "x": 10,
@@ -170,7 +209,7 @@
     {
       "type": "Label",
       "name": "vnXYKZJw_P5wMnHa1tH7-5",
-      "text": "Mana Cost",
+      "text": "tr(lblManaCost)",  
       "x": 10,
       "y": 150,
       "width": 100,
@@ -178,6 +217,7 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "B02",
       "text": "0-2",
       "x": 10,
@@ -187,6 +227,7 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "B35",
       "text": "3-5",
       "x": 90,
@@ -196,6 +237,7 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "B68",
       "text": "6-8",
       "x": 170,
@@ -205,6 +247,7 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "B9X",
       "text": "9+",
       "x": 250,
@@ -214,8 +257,8 @@
     },
     {
       "type": "Label",
-      "name": "vnXYKZJw_P5wMnHa1tH7-10",
-      "text": "Rarity",
+      "name": "vnXYKZJw_P5wMnHa1tH7-10", 
+      "text": "tr(lblRarity)",  
       "x": 10,
       "y": 210,
       "width": 100,
@@ -223,8 +266,9 @@
     },
     {
       "type": "TextButton",
-      "name": "BCommon",
-      "text": "Common",
+      "selectable": true,
+      "name": "BCommon", 
+      "text": "tr(lblCommon)",  
       "x": 10,
       "y": 240,
       "width": 70,
@@ -232,8 +276,9 @@
     },
     {
       "type": "TextButton",
-      "name": "BUncommon",
-      "text": "Uncommon",
+      "selectable": true,
+      "name": "BUncommon", 
+      "text": "tr(lblUncommon)",  
       "x": 90,
       "y": 240,
       "width": 70,
@@ -241,8 +286,9 @@
     },
     {
       "type": "TextButton",
-      "name": "BRare",
-      "text": "Rare",
+      "selectable": true,
+      "name": "BRare", 
+      "text": "tr(lblRare)",  
       "x": 170,
       "y": 240,
       "width": 70,
@@ -250,8 +296,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BMythic",
-      "text": "Mythic",
+      "text": "Mythic",  
       "x": 250,
       "y": 240,
       "width": 70,
@@ -259,8 +306,9 @@
     },
     {
       "type": "TextButton",
+      "selectable": true,
       "name": "BResetEdition",
-      "text": "Reset",
+      "text": "tr(lblReset)",  
       "x": 250,
       "y": 60,
       "width": 70,
@@ -271,9 +319,9 @@
       "name": "RewardDummy",
       "text": "Image",
       "style": "nobg",
-      "x": 350,
+      "x": 358,
       "y": 40,
-      "width": 110,
+      "width": 95,
       "height": 130
     }
   ]

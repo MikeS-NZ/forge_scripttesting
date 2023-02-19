@@ -114,9 +114,11 @@ public class HumanPlay {
 
         final HumanPlaySpellAbility req = new HumanPlaySpellAbility(controller, sa);
         if (!req.playAbility(true, false, false)) {
-            if (flippedToCast && !castFaceDown) {
+            Card rollback = p.getGame().getCardState(sa.getHostCard());
+            if (castFaceDown) {
+                rollback.setFaceDown(false);
+            } else if (flippedToCast) {
                 // need to get the changed card if able
-                Card rollback = p.getGame().getCardState(sa.getHostCard());
                 rollback.turnFaceDown(true);
                 //need to set correct imagekey when forcing facedown
                 rollback.setImageKey(ImageKeys.getTokenKey(isforetold ? ImageKeys.FORETELL_IMAGE : ImageKeys.HIDDEN_CARD));
@@ -232,7 +234,7 @@ public class HumanPlay {
             current = Iterables.getFirst(AbilityUtils.getDefinedCards(source, sourceAbility.getParam("ShowCurrentCard"), sourceAbility), null);
         }
 
-        final List<CostPart> parts = CostAdjustment.adjust(cost, sourceAbility).getCostParts();
+        final List<CostPart> parts = cost.getCostParts();
         final List<CostPart> remainingParts = new ArrayList<>(parts);
         CostPart costPart = null;
         if (!parts.isEmpty()) {
@@ -281,6 +283,7 @@ public class HumanPlay {
                     || part instanceof CostFlipCoin
                     || part instanceof CostRollDice
                     || part instanceof CostDamage
+                    || part instanceof CostEnlist
                     || part instanceof CostPutCounter
                     || part instanceof CostRemoveCounter
                     || part instanceof CostRemoveAnyCounter
@@ -320,7 +323,7 @@ public class HumanPlay {
                 } else {
                     from = costExile.getFrom();
                     CardCollection list = CardLists.getValidCards(p.getCardsIn(from), part.getType().split(";"), p, source, sourceAbility);
-                    final int nNeeded = getAmountFromPart(costPart, source, sourceAbility);
+                    final int nNeeded = getAmountFromPart(part, source, sourceAbility);
                     if (list.size() < nNeeded) {
                         return false;
                     }
@@ -450,7 +453,6 @@ public class HumanPlay {
                         return false;
                     }
                 }
-                return true;
             }
             else if (part instanceof CostGainControl) {
                 int amount = Integer.parseInt(part.getAmount());
@@ -477,7 +479,7 @@ public class HumanPlay {
                         return false;
                     }
 
-                    ((CostDiscard)part).payAsDecided(p, PaymentDecision.card(Aggregates.random(p.getCardsIn(ZoneType.Hand), amount, new CardCollection())), sourceAbility, true);
+                    ((CostDiscard)part).payAsDecided(p, PaymentDecision.card(Aggregates.random(p.getCardsIn(ZoneType.Hand), amount)), sourceAbility, true);
                 } else {
                     CardCollectionView list = CardLists.getValidCards(p.getCardsIn(ZoneType.Hand), part.getType(), p, source, sourceAbility);
                     boolean hasPaid = payCostPart(controller, p, sourceAbility, hcd.isEffect(), (CostPartWithList)part, amount, list, Localizer.getInstance().getMessage("lbldiscard") + orString);
@@ -512,6 +514,20 @@ public class HumanPlay {
                 }
 
                 p.payEnergy(amount, source);
+            }
+            else if (part instanceof CostExert) {
+                part.payAsDecided(p, PaymentDecision.card(source), sourceAbility, hcd.isEffect());
+            }
+
+            else if (part instanceof CostPayShards) {
+                CounterType counterType = CounterType.get(CounterEnumType.MANASHARDS);
+                int amount = getAmountFromPartX(part, source, sourceAbility);
+
+                if (!mandatory && !p.getController().confirmPayment(part, Localizer.getInstance().getMessage("lblDoYouWantSpendNTargetTypeCounter", String.valueOf(amount), counterType.getName()), sourceAbility)) {
+                    return false;
+                }
+
+                p.payShards(amount, source);
             }
 
             else {

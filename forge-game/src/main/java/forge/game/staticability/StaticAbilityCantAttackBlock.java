@@ -115,7 +115,7 @@ public class StaticAbilityCantAttackBlock {
         if (stAb.hasParam("ValidBlocker")) {
             boolean stillblock = true;
             for (final String v : stAb.getParam("ValidBlocker").split(",")) {
-                if (blocker.isValid(v, host.getController(), host, stAb)) {
+                if (blocker != null && blocker.isValid(v, host.getController(), host, stAb)) {
                     stillblock = false;
                     //Dragon Hunter check
                     if (v.contains("withoutReach") && blocker.hasStartOfKeyword("IfReach")) {
@@ -185,7 +185,13 @@ public class StaticAbilityCantAttackBlock {
             }
         }
 
-        return new Cost(costString, true);
+        Cost cost = new Cost(costString, true);
+
+        if (stAb.hasParam("Trigger")) {
+            cost.getCostParts().get(0).setTrigger(stAb.getPayingTrigSA());
+        }
+
+        return cost;
     }
 
     /**
@@ -221,11 +227,6 @@ public class StaticAbilityCantAttackBlock {
         }
 
         if (!stAb.matchesValidParam("ValidTarget", target)) {
-            return false;
-        }
-
-        final Player defender = target instanceof Card ? ((Card) target).getController() : (Player) target;
-        if (!stAb.matchesValidParam("ValidDefender", defender)) {
             return false;
         }
         return true;

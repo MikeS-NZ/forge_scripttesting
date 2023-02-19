@@ -36,7 +36,6 @@ public class PlayerZoneBattlefield extends PlayerZone {
     private static final long serialVersionUID = 5750837078903423978L;
 
     private boolean trigger = true;
-    private boolean leavesTrigger = true;
     private CardCollection meldedCards = new CardCollection();
 
     public PlayerZoneBattlefield(final ZoneType zone, final Player player) {
@@ -63,23 +62,11 @@ public class PlayerZoneBattlefield extends PlayerZone {
 
         if (trigger) {
             c.setSickness(true); // summoning sickness
-            c.runComesIntoPlayCommands();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public final void remove(final Card c) {
-        super.remove(c);
-
-        if (leavesTrigger) {
-            c.runLeavesPlayCommands();
         }
     }
 
     public final void setTriggers(final boolean b) {
         trigger = b;
-        leavesTrigger = b;
     }
 
     @Override

@@ -11,6 +11,7 @@ Lair
 Locus
 Mine
 Power-Plant
+Sphere:Spheres
 Tower
 Urza's
 [CreatureTypes]
@@ -48,6 +49,7 @@ Brainiac:Brainiacs
 Bringer:Bringers
 Brushwagg:Brushwaggs
 Camarid:Camarids
+C'tan:C'tan
 Camel:Camels
 Caribou:Caribous
 Carrier:Carriers
@@ -58,6 +60,7 @@ Chimera:Chimeras
 Citizen:Citizens
 Clamfolk:Clamfolk
 Cleric:Clerics
+Clown:Clowns
 Cockatrice:Cockatrices
 Construct:Constructs
 Cow:Cows
@@ -89,6 +92,7 @@ Elemental:Elementals
 Elephant:Elephants
 Elf:Elves
 Elk:Elks
+Employee:Employees
 Eye:Eyes
 Faerie:Faeries
 Ferret:Ferrets
@@ -114,6 +118,7 @@ Gorgon:Gorgons
 Graveborn:Graveborn
 Gremlin:Gremlins
 Griffin:Griffins
+Guest:Guests
 Hag:Hags
 Halfling:Halflings
 Hamster:Hamsters
@@ -132,6 +137,7 @@ Illusion:Illusions
 Imp:Imps
 Incarnation:Incarnations
 Inkling:Inklings
+Inquisitor:Inquisitors
 Insect:Insects
 Jackal:Jackals
 Jellyfish:Jellyfishes
@@ -161,6 +167,7 @@ Merfolk:Merfolk
 Metathran:Metathrans
 Minion:Minions
 Minotaur:Minotaurs
+Mite:Mites
 Mole:Moles
 Monger:Mongers
 Mongoose:Mongooses
@@ -173,6 +180,7 @@ Myr:Myrs
 Mystic:Mystics
 Naga:Nagas
 Nautilus:Nautili
+Necron:Necrons
 Nephilim:Nephilims
 Nightmare:Nightmares
 Nightstalker:Nightstalkers
@@ -204,6 +212,7 @@ Pincher:Pinchers
 Pirate:Pirates
 Plant:Plants
 Praetor:Praetors
+Primarch:Primarchs
 Prism:Prisms
 Processor:Processors
 Rabbit:Rabbits
@@ -213,6 +222,7 @@ Rebel:Rebels
 Reflection:Reflections
 Rhino:Rhinos
 Rigger:Riggers
+Robot:Robots
 Rogue:Rogues
 Sable:Sables
 Salamander:Salamanders
@@ -268,6 +278,7 @@ Trilobite:Trilobites
 Triskelavite:Triskelavites
 Troll:Trolls
 Turtle:Turtles
+Tyranid:Tyranids
 Unicorn:Unicorns
 Vampire:Vampires
 Vedalken:Vedalkens
@@ -328,6 +339,7 @@ Basri
 Bolas
 Calix
 Chandra
+Comet
 Dack
 Dakkon
 Daretti

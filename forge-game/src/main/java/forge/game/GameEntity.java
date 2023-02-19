@@ -26,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import forge.game.ability.AbilityKey;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
@@ -178,7 +179,7 @@ public abstract class GameEntity extends GameObject implements IIdentifiable {
     }
 
     public final boolean hasCardAttachment(final String cardName) {
-        return CardLists.count(getAttachedCards(), CardPredicates.nameEquals(cardName)) > 0;
+        return Iterables.any(getAttachedCards(), CardPredicates.nameEquals(cardName));
     }
     public final boolean isEnchantedBy(final String cardName) {
         // Rule 303.4k  Even if c is no Aura it still counts
@@ -224,6 +225,10 @@ public abstract class GameEntity extends GameObject implements IIdentifiable {
         // master mode
         if (!attach.isAttachment() || (attach.isCreature() && !attach.hasKeyword(Keyword.RECONFIGURE))
                 || equals(attach)) {
+            return false;
+        }
+
+        if (attach.isPhasedOut()) {
             return false;
         }
 
@@ -330,9 +335,16 @@ public abstract class GameEntity extends GameObject implements IIdentifiable {
         subtractCounter(CounterType.get(counterName), n);
     }
 
-    abstract public void addCounterInternal(final CounterType counterType, final int n, final Player source, final boolean fireEvents, GameEntityCounterTable table);
-    public void addCounterInternal(final CounterEnumType counterType, final int n, final Player source, final boolean fireEvents, GameEntityCounterTable table) {
-        addCounterInternal(CounterType.get(counterType), n, source, fireEvents, table);
+    abstract public void addCounterInternal(final CounterType counterType, final int n, final Player source, final boolean fireEvents, GameEntityCounterTable table, Map<AbilityKey, Object> params);
+    public void addCounterInternal(final CounterEnumType counterType, final int n, final Player source, final boolean fireEvents, GameEntityCounterTable table, Map<AbilityKey, Object> params) {
+        addCounterInternal(CounterType.get(counterType), n, source, fireEvents, table, params);
+    }
+
+    public List<Pair<Integer, Boolean>> getDamageReceivedThisTurn() {
+        return damageReceivedThisTurn;
+    }
+    public void setDamageReceivedThisTurn(List<Pair<Integer, Boolean>> dmg) {
+        damageReceivedThisTurn.addAll(dmg);
     }
 
     public void receiveDamage(Pair<Integer, Boolean> dmg) {

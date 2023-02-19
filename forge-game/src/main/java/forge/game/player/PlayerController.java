@@ -1,5 +1,6 @@
 package forge.game.player;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -143,6 +144,8 @@ public abstract class PlayerController {
 
     public abstract CardCollection orderBlockers(Card attacker, CardCollection blockers);
     public abstract List<Card> exertAttackers(List<Card> attackers);
+    public abstract List<Card> enlistAttackers(List<Card> attackers);
+
     /**
      * Add a card to a pre-existing blocking order.
      * @param attacker the attacking creature.
@@ -181,6 +184,12 @@ public abstract class PlayerController {
     public abstract String chooseSomeType(String kindOfType, SpellAbility sa, Collection<String> validTypes, List<String> invalidTypes, boolean isOptional);
     public final String chooseSomeType(String kindOfType, SpellAbility sa, Collection<String> validTypes, List<String> invalidTypes) {
         return chooseSomeType(kindOfType, sa, validTypes, invalidTypes, false);
+    }
+
+    public abstract String chooseSector(Card assignee, String ai, List<String> sectors);
+    public final String chooseSector(Card assignee, String ai) {
+        final List<String> sectors = Arrays.asList("Alpha", "Beta", "Gamma");
+        return chooseSector(assignee, ai, sectors);
     }
 
     public abstract Object vote(SpellAbility sa, String prompt, List<Object> options, ListMultimap<Object, Player> votes, Player forPlayer);
@@ -226,6 +235,8 @@ public abstract class PlayerController {
 
     public abstract CounterType chooseCounterType(List<CounterType> options, SpellAbility sa, String prompt,
             Map<String, Object> params);
+
+    public abstract String chooseKeywordForPump(List<String> options, SpellAbility sa, String prompt, Card tgtCard);
 
     public abstract boolean confirmPayment(CostPart costPart, String string, SpellAbility sa);
     public abstract ReplacementEffect chooseSingleReplacementEffect(String prompt, List<ReplacementEffect> possibleReplacers);

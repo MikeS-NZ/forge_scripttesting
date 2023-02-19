@@ -2,10 +2,12 @@ package forge.ai;
 
 import static forge.ai.ComputerUtilCard.getBestCreatureAI;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import forge.card.MagicColor;
 import forge.game.cost.*;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -53,6 +55,14 @@ public class AiCostDecision extends CostDecisionMakerBase {
         int c = cost.getAbilityAmount(ability);
 
         return PaymentDecision.number(c);
+    }
+
+    @Override
+    public PaymentDecision visit(CostChooseColor cost) {
+        int c = cost.getAbilityAmount(ability);
+        List<String> choices = player.getController().chooseColors("Color", ability, c, c,
+                new ArrayList<>(MagicColor.Constant.ONLY_COLORS));
+        return PaymentDecision.colors(choices);
     }
 
     @Override
@@ -229,6 +239,13 @@ public class AiCostDecision extends CostDecisionMakerBase {
     }
 
     @Override
+    public PaymentDecision visit(final CostEnlist cost) {
+        CardCollection choices = CostEnlist.getCardsForEnlisting(player);
+        CardLists.sortByPowerDesc(choices);
+        return choices.isEmpty() ? null : PaymentDecision.card(choices.getFirst());
+    }
+
+    @Override
     public PaymentDecision visit(CostFlipCoin cost) {
         int c = cost.getAbilityAmount(ability);
         return PaymentDecision.number(c);
@@ -248,7 +265,8 @@ public class AiCostDecision extends CostDecisionMakerBase {
 
         int c = cost.getAbilityAmount(ability);
 
-        final CardCollection typeList = CardLists.getValidCards(player.getGame().getCardsIn(ZoneType.Battlefield), cost.getType().split(";"), player, source, ability);
+        CardCollection typeList = CardLists.getValidCards(player.getGame().getCardsIn(ZoneType.Battlefield), cost.getType().split(";"), player, source, ability);
+        typeList = CardLists.filter(typeList, crd -> crd.canBeControlledBy(player));
 
         if (typeList.size() < c) {
             return null;
@@ -438,7 +456,7 @@ public class AiCostDecision extends CostDecisionMakerBase {
 
         final AiController aic = ((PlayerControllerAi)player.getController()).getAi();
         CardCollectionView list = aic.chooseSacrificeType(cost.getType(), ability, isEffect(), c, null);
-        return PaymentDecision.card(list);
+        return list == null ? null : PaymentDecision.card(list);
     }
 
     @Override
@@ -772,6 +790,11 @@ public class AiCostDecision extends CostDecisionMakerBase {
 
     @Override
     public PaymentDecision visit(CostUntap cost) {
+        return PaymentDecision.number(0);
+    }
+
+    @Override
+    public PaymentDecision visit(CostPayShards cost) {
         return PaymentDecision.number(0);
     }
 

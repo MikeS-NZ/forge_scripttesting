@@ -249,7 +249,7 @@ public final class StaticAbilityContinuous {
                         }
                         // two variants for Red vs. red in keyword
                         if (input.contains("ColorsYouCtrl") || input.contains("colorsYouCtrl")) {
-                            final ColorSet colorsYouCtrl = CardUtil.getColorsYouCtrl(controller);
+                            final ColorSet colorsYouCtrl = CardUtil.getColorsFromCards(controller.getCardsIn(ZoneType.Battlefield));
 
                             for (byte color : colorsYouCtrl) {
                                 final String colorWord = MagicColor.toLongString(color);
@@ -322,6 +322,15 @@ public final class StaticAbilityContinuous {
                     List<ZoneType> zones = ZoneType.listValueOf(params.get("SharedKeywordsZone"));
                     String[] restrictions = params.containsKey("SharedRestrictions") ? params.get("SharedRestrictions").split(",") : new String[] {"Card"};
                     addKeywords = CardFactoryUtil.sharedKeywords(addKeywords, restrictions, zones, hostCard, stAb);
+                }
+            } else if (params.containsKey("ShareRememberedKeywords")) {
+                List<String> kwToShare = Lists.newArrayList();
+                for (final Object o : hostCard.getRemembered()) {
+                    final String k = (String) o;
+                    kwToShare.add(k);
+                }
+                if (!kwToShare.isEmpty()) {
+                    addKeywords = kwToShare;
                 }
             }
 
@@ -554,6 +563,11 @@ public final class StaticAbilityContinuous {
                         p.setMaxHandSize(max);
                     }
                 }
+                if (params.containsKey("RaiseMaxHandSize")) {
+                    String rmhs = params.get("RaiseMaxHandSize");
+                    int rmax = AbilityUtils.calculateAmount(hostCard, rmhs, stAb);
+                    p.setMaxHandSize(p.getMaxHandSize() + rmax);
+                }
 
                 if (params.containsKey("AdjustLandPlays")) {
                     String mhs = params.get("AdjustLandPlays");
@@ -564,6 +578,7 @@ public final class StaticAbilityContinuous {
                         p.addMaxLandPlays(se.getTimestamp(), add);
                     }
                 }
+
                 if (params.containsKey("ControlOpponentsSearchingLibrary")) {
                     Player cntl = Iterables.getFirst(AbilityUtils.getDefinedPlayers(hostCard, params.get("ControlOpponentsSearchingLibrary"), stAb), null);
                     p.addControlledWhileSearching(se.getTimestamp(), cntl);
@@ -581,12 +596,6 @@ public final class StaticAbilityContinuous {
                     String mhs = params.get("AdditionalOptionalVote");
                     int add = AbilityUtils.calculateAmount(hostCard, mhs, stAb);
                     p.addAdditionalOptionalVote(se.getTimestamp(), add);
-                }
-
-                if (params.containsKey("RaiseMaxHandSize")) {
-                    String rmhs = params.get("RaiseMaxHandSize");
-                    int rmax = AbilityUtils.calculateAmount(hostCard, rmhs, stAb);
-                    p.setMaxHandSize(p.getMaxHandSize() + rmax);
                 }
 
                 if (params.containsKey("ManaConversion")) {
@@ -876,14 +885,6 @@ public final class StaticAbilityContinuous {
                         // with that the TargetedCard does not need the Svars added to them anymore
                         // but only do it if the trigger doesn't already have a overriding ability
                         addedTrigger.add(actualTrigger);
-                        if (params.containsKey("TriggerRememberDefined")) {
-                            String triggerRemembered = params.get("TriggerRememberDefined");
-                            for (final String rem : triggerRemembered.split(",")) {
-                                for (final Object o : AbilityUtils.getDefinedEntities(hostCard, rem, stAb)) {
-                                    actualTrigger.addRemembered(o);
-                                }
-                            }
-                        }
                     }
                 }
 

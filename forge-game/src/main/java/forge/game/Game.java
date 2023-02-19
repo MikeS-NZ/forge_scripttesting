@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import forge.game.card.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.base.Predicate;
@@ -45,16 +46,6 @@ import forge.card.CardRarity;
 import forge.card.CardStateName;
 import forge.card.CardType.Supertype;
 import forge.game.ability.AbilityKey;
-import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
-import forge.game.card.CardDamageHistory;
-import forge.game.card.CardLists;
-import forge.game.card.CardPredicates;
-import forge.game.card.CardUtil;
-import forge.game.card.CardView;
-import forge.game.card.CardZoneTable;
-import forge.game.card.CounterType;
 import forge.game.combat.Combat;
 import forge.game.event.Event;
 import forge.game.event.GameEventDayTimeChanged;
@@ -124,6 +115,7 @@ public class Game {
     private CardZoneTable untilHostLeavesPlayTriggerList = new CardZoneTable();
 
     private Table<CounterType, Player, List<Pair<Card, Integer>>> countersAddedThisTurn = HashBasedTable.create();
+    private Multimap<CounterType, Pair<Card, Integer>> countersRemovedThisTurn = ArrayListMultimap.create();
 
     private FCollection<CardDamageHistory> globalDamageHistory = new FCollection<>();
     private IdentityHashMap<Pair<Integer, Boolean>, Pair<Card, GameEntity>> damageThisTurnLKI = new IdentityHashMap<>();
@@ -162,7 +154,6 @@ public class Game {
     public Player getStartingPlayer() {
         return startingPlayer;
     }
-
     public void setStartingPlayer(final Player p) {
         startingPlayer = p;
     }
@@ -170,7 +161,6 @@ public class Game {
     public Player getMonarch() {
         return monarch;
     }
-
     public void setMonarch(final Player p) {
         monarch = p;
     }
@@ -178,7 +168,6 @@ public class Game {
     public Player getMonarchBeginTurn() {
         return monarchBeginTurn;
     }
-
     public void setMonarchBeginTurn(Player monarchBeginTurn) {
         this.monarchBeginTurn = monarchBeginTurn;
     }
@@ -186,7 +175,7 @@ public class Game {
     public Player getHasInitiative() {
         return initiative;
     }
-    public void setHasInitiative(final Player p ) {
+    public void setHasInitiative(final Player p) {
         initiative = p;
     }
 
@@ -254,11 +243,11 @@ public class Game {
 
     // methods that deal with saving, retrieving and clearing LKI information about cards on zone change
     private final HashMap<Integer, Card> changeZoneLKIInfo = new HashMap<>();
-    public final void addChangeZoneLKIInfo(Card c) {
-        if (c == null) {
+    public final void addChangeZoneLKIInfo(Card lki) {
+        if (lki == null) {
             return;
         }
-        changeZoneLKIInfo.put(c.getId(), CardUtil.getLKICopy(c));
+        changeZoneLKIInfo.put(lki.getId(), lki);
     }
     public final Card getChangeZoneLKIInfo(Card c) {
         if (c == null) {
@@ -307,6 +296,9 @@ public class Game {
             pl.setMaxHandSize(psc.getStartingHand());
             pl.setStartingHandSize(psc.getStartingHand());
 
+            if (psc.getManaShards() > 0) {
+                pl.setCounters(CounterEnumType.MANASHARDS, psc.getManaShards(), true);
+            }
             int teamNum = psc.getTeamNumber();
             if (teamNum == -1) {
                 // RegisteredPlayer doesn't have an assigned team, set it to 1 higher than the highest found team number
@@ -561,7 +553,7 @@ public class Game {
 
         CardCollection cards = new CardCollection();
         for (final Player p : getPlayers()) {
-            cards.addAll(p.getCardsIncludePhasingIn(zone));
+            cards.addAll(p.getCardsIn(zone, false));
         }
         return cards;
     }
@@ -789,6 +781,7 @@ public class Game {
         CardCollectionView cards = this.getCardsInGame();
         boolean planarControllerLost = false;
         boolean isMultiplayer = getPlayers().size() > 2;
+        CardZoneTable triggerList = new CardZoneTable();
 
         // 702.142f & 707.9
         // If a player leaves the game, all face-down cards that player owns must be revealed to all players.
@@ -823,6 +816,7 @@ public class Game {
                         cc.removeRemembered(c);
                         cc.removeAttachedTo(c);
                     }
+                    triggerList.put(c.getZone().getZoneType(), null, c);
                     getAction().ceaseToExist(c, false);
                     // CR 603.2f owner of trigger source lost game
                     getTriggerHandler().clearDelayedTrigger(c);
@@ -840,12 +834,15 @@ public class Game {
                     }
                     if (c.getController().equals(p)) {
                         getAction().exile(c, null);
+                        triggerList.put(ZoneType.Battlefield, c.getZone().getZoneType(), c);
                     }
                 }
             } else {
                 c.forceTurnFaceUp();
             }
         }
+
+        triggerList.triggerChangesZoneAll(this, null);
 
         // 901.6: If the current planar controller would leave the game, instead the next player
         // in turn order that wouldn’t leave the game becomes the planar controller, then the old
@@ -887,8 +884,7 @@ public class Game {
         ingamePlayers.remove(p);
         lostPlayers.add(p);
 
-        final Map<AbilityKey, Object> runParams = AbilityKey.newMap();
-        runParams.put(AbilityKey.Player, p);
+        final Map<AbilityKey, Object> runParams = AbilityKey.mapFromPlayer(p);
         getTriggerHandler().runTrigger(TriggerType.LosesGame, runParams, false);
     }
 
@@ -1101,6 +1097,7 @@ public class Game {
 
     public void onCleanupPhase() {
         clearCounterAddedThisTurn();
+        clearCounterRemovedThisTurn();
         clearGlobalDamageHistory();
         // some cards need this info updated even after a player lost, so don't skip them
         for (Player player : getRegisteredPlayers()) {
@@ -1139,6 +1136,24 @@ public class Game {
 
     public void clearCounterAddedThisTurn() {
         countersAddedThisTurn.clear();
+    }
+
+    public void addCounterRemovedThisTurn(CounterType cType, Card card, Integer value) {
+        countersRemovedThisTurn.put(cType, Pair.of(CardUtil.getLKICopy(card), value));
+    }
+
+    public int getCounterRemovedThisTurn(CounterType cType, String validCard, Card source, Player sourceController, CardTraitBase ctb) {
+        int result = 0;
+        for (Pair<Card, Integer> p : countersRemovedThisTurn.get(cType)) {
+            if (p.getKey().isValid(validCard.split(","), sourceController, source, ctb)) {
+                result += p.getValue();
+            }
+        }
+        return result;
+    }
+
+    public void clearCounterRemovedThisTurn() {
+        countersRemovedThisTurn.clear();
     }
 
     /**
@@ -1202,8 +1217,7 @@ public class Game {
 
                     // If an effect allows or instructs a player to reveal the card as it’s being drawn,
                     // it’s revealed after the spell becomes cast or the ability becomes activated.
-                    final Map<AbilityKey, Object> runParams = Maps.newHashMap();
-                    runParams.put(AbilityKey.Card, c);
+                    final Map<AbilityKey, Object> runParams = AbilityKey.mapFromCard(c);
                     runParams.put(AbilityKey.Number, facedownWhileCasting.get(c));
                     runParams.put(AbilityKey.Player, this);
                     runParams.put(AbilityKey.CanReveal, true);

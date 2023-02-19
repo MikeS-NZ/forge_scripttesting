@@ -39,7 +39,7 @@ public class AnimateAllEffect extends AnimateEffectBase {
         if (sa.hasParam("Toughness")) {
             toughness = AbilityUtils.calculateAmount(host, sa.getParam("Toughness"), sa);
         }
-        final Game game = sa.getActivatingPlayer().getGame();
+        final Game game = host.getGame();
 
         // Every Animate event needs a unique time stamp
         final long timestamp = game.getNextTimestamp();
@@ -136,13 +136,13 @@ public class AnimateAllEffect extends AnimateEffectBase {
 
         CardCollectionView list;
 
-        if (!sa.usesTargeting() && !sa.hasParam("Defined")) {
-            list = game.getCardsIn(ZoneType.Battlefield);
-        } else {
+        if (sa.usesTargeting() || sa.hasParam("Defined")) {
             list = getTargetPlayers(sa).getCardsIn(ZoneType.Battlefield);
+        } else {
+            list = game.getCardsIn(ZoneType.Battlefield);
         }
 
-        list = CardLists.getValidCards(list, valid, host.getController(), host, sa);
+        list = CardLists.getValidCards(list, valid, sa.getActivatingPlayer(), host, sa);
 
         for (final Card c : list) {
             doAnimate(c, sa, power, toughness, types, removeTypes, finalColors, keywords, removeKeywords,
@@ -155,21 +155,21 @@ public class AnimateAllEffect extends AnimateEffectBase {
 
             game.fireEvent(new GameEventCardStatsChanged(c));
 
-            final GameCommand unanimate = new GameCommand() {
-                private static final long serialVersionUID = -5861759814760561373L;
-
-                @Override
-                public void run() {
-                    doUnanimate(c, timestamp);
-
-                    game.fireEvent(new GameEventCardStatsChanged(c));
-                }
-            };
-
             if (!permanent) {
+                final GameCommand unanimate = new GameCommand() {
+                    private static final long serialVersionUID = -5861759814760561373L;
+
+                    @Override
+                    public void run() {
+                        doUnanimate(c, timestamp);
+
+                        game.fireEvent(new GameEventCardStatsChanged(c));
+                    }
+                };
+
                 addUntilCommand(sa, unanimate);
             }
         }
-    } // animateAllResolve
+    }
 
 }
